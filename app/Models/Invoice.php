@@ -26,4 +26,21 @@ class Invoice extends Model
     {
         return $this->hasMany(Expense::class);
     }
+
+    public function financialEntries()
+{
+    return $this->morphMany(FinancialEntry::class, 'sourceDocument');
+}
+
+public function createReceivable()
+{
+    return $this->financialEntries()->create([
+        'type' => 'receivable',
+        'total_amount' => $this->amount_payable,
+        'remaining_amount' => $this->amount_payable,
+        'start_date' => now(),
+        'partner_id' => $this->customer_id,
+        'partner_type' => Customer::class,
+    ]);
+}
 }

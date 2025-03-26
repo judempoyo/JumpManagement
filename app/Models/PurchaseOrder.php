@@ -21,5 +21,20 @@ class PurchaseOrder extends Model
         return $this->hasMany(PurchaseOrderItem::class);
     }
     
-   
+    public function financialEntries()
+    {
+        return $this->morphMany(FinancialEntry::class, 'sourceDocument');
+    }
+    
+    public function createDebt()
+    {
+        return $this->financialEntries()->create([
+            'type' => 'debt',
+            'total_amount' => $this->amount_payable,
+            'remaining_amount' => $this->amount_payable,
+            'start_date' => now(),
+            'partner_id' => $this->supplier_id,
+            'partner_type' => Supplier::class,
+        ]);
+    }
 }
