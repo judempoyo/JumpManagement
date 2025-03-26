@@ -12,8 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invoice_items', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id');
+            $table->integer('quantity')->default(0);
+            $table->decimal('unit_price', 24, 6)->default(0);
+            $table->decimal('subtotal', 24, 6)->default(0);
+            $table->unsignedBigInteger('invoice_id');
+            $table->unsignedBigInteger('product_id');
             $table->timestamps();
+        
+            $table->foreign('invoice_id')->references('id')->on('invoices');
+            $table->foreign('product_id')->references('id')->on('products');
         });
     }
 
