@@ -58,7 +58,7 @@ class InventoryResource extends Resource
                             ->searchable()
                             ->preload()
                             ->live()
-                            ->afterStateUpdated(function ($state, Set $set) {
+                            ->afterStateUpdated(function ($state, Forms\Set $set) {
                                 if ($state) {
                                     $product = Product::find($state);
                                     $set('initial_stock', $product->quantity_in_stock);
@@ -81,7 +81,7 @@ class InventoryResource extends Resource
                             ->numeric()
                             ->minValue(0)
                             ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set) {
+                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
                                 $initial = (float) $get('initial_stock');
                                 $final = (float) $get('final_stock');
                                 $difference = $final - $initial;
@@ -100,17 +100,6 @@ class InventoryResource extends Resource
                         Textarea::make('notes')
                             ->label('Notes')
                             ->columnSpanFull(),
-                            
-                        // Champs cachés pour affichage seulement
-                        TextInput::make('product_name')
-                            ->label('Nom produit')
-                            ->disabled()
-                            ->dehydrated(false),
-                            
-                        TextInput::make('product_code')
-                            ->label('Code produit')
-                            ->disabled()
-                            ->dehydrated(false),
                     ]),
             ]);
     }
@@ -162,6 +151,14 @@ class InventoryResource extends Resource
                     ->formatStateUsing(function ($record) {
                         return $record->final_stock == $record->initial_stock ? 'Correct' : 'Écart';
                     }),
+                    
+                TextColumn::make('notes')
+                    ->label('Notes')
+                    ->limit(30)
+                    ->tooltip(function (TextColumn $column): ?string {
+                        $state = $column->getState();
+                        return strlen($state) > 30 ? $state : null;
+                    }),
             ])
             ->filters([
                 SelectFilter::make('product')
@@ -170,13 +167,15 @@ class InventoryResource extends Resource
                     ->searchable()
                     ->preload(),
                     
-                Filter::make('date')
+                Filter::make('date_range')
                     ->label('Période')
                     ->form([
                         DatePicker::make('from')
-                            ->label('Du'),
+                            ->label('Du')
+                            ->default(now()->subMonth()),
                         DatePicker::make('to')
-                            ->label('Au'),
+                            ->label('Au')
+                            ->default(now()),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
@@ -188,11 +187,22 @@ class InventoryResource extends Resource
                                 $data['to'],
                                 fn (Builder $query, $date): Builder => $query->whereDate('date', '<=', $date),
                             );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['from'] ?? null) {
+                            $indicators['from'] = 'Du ' . Carbon::parse($data['from'])->toFormattedDateString();
+                        }
+                        if ($data['to'] ?? null) {
+                            $indicators['to'] = 'Au ' . Carbon::parse($data['to'])->toFormattedDateString();
+                        }
+                        return $indicators;
                     }),
                     
                 Filter::make('discrepancies')
                     ->label('Avec écarts seulement')
-                    ->query(fn (Builder $query): Builder => $query->whereColumn('final_stock', '!=', 'initial_stock')),
+                    ->query(fn (Builder $query): Builder => $query->whereColumn('final_stock', '!=', 'initial_stock'))
+                    ->toggle(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
@@ -208,7 +218,8 @@ class InventoryResource extends Resource
                 Tables\Actions\DeleteAction::make()
                     ->before(function ($record) {
                         // Réajuster le stock si l'inventaire est supprimé
-                        $record->product->decrement('quantity_in_stock', $record->difference);
+                        $diff = $record->final_stock - $record->initial_stock;
+                        $record->product->decrement('quantity_in_stock', $diff);
                     }),
             ])
             ->bulkActions([
@@ -218,14 +229,8 @@ class InventoryResource extends Resource
             ])
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),
-            ]);
-    }
-    
-    public static function getRelations(): array
-    {
-        return [
-            // Vous pouvez ajouter des relations ici si nécessaire
-        ];
+            ])
+            ->defaultSort('date', 'desc');
     }
     
     public static function getPages(): array
