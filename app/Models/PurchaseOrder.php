@@ -6,6 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrder extends Model
 {
+    protected $fillable = [
+        'supplier_id',
+        'date',
+        'time',
+        'total',
+        'amount_payable',
+        'discount',
+        'status',
+        'user_id',
+        'paid',
+        'notes',
+    ];
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);

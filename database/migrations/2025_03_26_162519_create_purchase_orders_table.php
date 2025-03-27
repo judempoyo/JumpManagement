@@ -19,14 +19,11 @@ return new class extends Migration
             $table->decimal('amount_payable', 24, 6)->default(0);
             $table->decimal('discount', 24, 6)->default(0);
             $table->boolean('status')->default(false);
-            $table->unsignedBigInteger('supplier_id');
-            $table->unsignedBigInteger('user_id'); // Utilisateur Laravel standard
+            $table->foreignId('supplier_id')->constrained()->onDelete('cascade'); 
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); 
             $table->boolean('paid')->default(false);
             $table->text('notes')->nullable();
             $table->timestamps();
-        
-            $table->foreign('supplier_id')->references('id')->on('suppliers');
-            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 
