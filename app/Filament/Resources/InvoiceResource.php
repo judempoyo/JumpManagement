@@ -7,6 +7,7 @@ use App\Filament\Resources\InvoiceResource\RelationManagers;
 use App\Models\Invoice;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\Inventory;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -92,7 +93,9 @@ class InvoiceResource extends Resource
                                 'cancelled' => 'Annulée',
                             ])
                             ->default('draft'),
-                            
+                        Forms\Components\Hidden::make('user_id')
+                            ->default(auth()->id())
+                            ->required(),
                         Textarea::make('notes')
                             ->label('Notes')
                             ->columnSpanFull(),
@@ -216,6 +219,50 @@ class InvoiceResource extends Resource
             ]);
     }
 
+    public static function afterCreate(Invoice $invoice)
+{
+    // Calculer et sauvegarder les totaux
+    $invoice->refresh(); // Recharger les relations
+    
+    $total = $invoice->items->sum('subtotal');
+    $amountPayable = $total - $invoice->discount;
+    
+    $invoice->update([
+        'total' => $total,
+        'amount_payable' => $amountPayable
+    ]);
+
+    foreach ($invoice->items as $item) {
+        // Mettre à jour le stock du produit
+        $product = $item->product;
+        $product->quantity_in_stock -= $item->quantity;
+        $product->save();
+
+        // Créer l'entrée d'inventaire
+        Inventory::create([
+            'date' => $invoice->date,
+            'product_id' => $product->id,
+            'initial_stock' => $product->quantity_in_stock + $item->quantity,
+            'final_stock' => $product->quantity_in_stock,
+            'notes' => 'Vente via facture #' . $invoice->id,
+            'user_id' => $invoice->user_id
+        ]);
+    }
+}
+
+    public static function afterDelete(Invoice $invoice)
+    {
+        foreach ($invoice->items as $item) {
+            // Revert product stock
+            $product = $item->product;
+            $product->quantity_in_stock += $item->quantity;
+            $product->save();
+
+            // Delete related inventory records
+            Inventory::where('notes', 'like', '%facture #' . $invoice->id . '%')
+                ->delete();
+        }
+    }
     protected static function updateItemTotals(Get $get, Set $set): void
     {
         $quantity = (float) $get('quantity');
@@ -224,6 +271,10 @@ class InvoiceResource extends Resource
         $subtotal = $quantity * $unitPrice;
         
         $set('subtotal', number_format($subtotal, 2, '.', ''));
+        $set('unit_price', number_format($unitPrice, 2, '.', '')); // Formatage du prix unitaire
+        
+        // Sauvegarder la valeur numérique pour le calcul
+        $set('subtotal_value', $subtotal);
     }
 
     protected static function updateInvoiceTotals(Get $get, Set $set): void

@@ -7,6 +7,7 @@ use App\Filament\Resources\PurchaseOrderResource\RelationManagers;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\Product;
+use App\Models\Inventory;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -78,7 +79,9 @@ class PurchaseOrderResource extends Resource
                         Toggle::make('paid')
                             ->label('Payé')
                             ->inline(false),
-                            
+                        Forms\Components\Hidden::make('user_id')
+                            ->default(auth()->id())
+                            ->required(),
                         Textarea::make('notes')
                             ->label('Notes')
                             ->columnSpanFull(),
@@ -201,6 +204,50 @@ class PurchaseOrderResource extends Resource
             ]);
     }
 
+    public static function afterCreate(PurchaseOrder $purchaseOrder)
+{
+    // Calculer et sauvegarder les totaux
+    $purchaseOrder->refresh(); // Recharger les relations
+    
+    $total = $purchaseOrder->items->sum('subtotal');
+    $amountPayable = $total - $purchaseOrder->discount;
+    
+    $purchaseOrder->update([
+        'total' => $total,
+        'amount_payable' => $amountPayable
+    ]);
+
+    foreach ($purchaseOrder->items as $item) {
+        // Mettre à jour le stock du produit
+        $product = $item->product;
+        $product->quantity_in_stock += $item->quantity;
+        $product->save();
+
+        // Créer l'entrée d'inventaire
+        Inventory::create([
+            'date' => $purchaseOrder->date,
+            'product_id' => $product->id,
+            'initial_stock' => $product->quantity_in_stock - $item->quantity,
+            'final_stock' => $product->quantity_in_stock,
+            'notes' => 'Approvisionnement via bon de commande #' . $purchaseOrder->id,
+            'user_id' => $purchaseOrder->user_id
+        ]);
+    }
+}
+
+    public static function afterDelete(PurchaseOrder $purchaseOrder)
+    {
+        foreach ($purchaseOrder->items as $item) {
+            // Revert product stock
+            $product = $item->product;
+            $product->quantity_in_stock -= $item->quantity;
+            $product->save();
+
+            // Delete related inventory records
+            Inventory::where('notes', 'like', '%bon de commande #' . $purchaseOrder->id . '%')
+                ->delete();
+        }
+    }
     protected static function updateItemTotals(Get $get, Set $set): void
     {
         $quantity = (float) $get('quantity');
@@ -209,6 +256,10 @@ class PurchaseOrderResource extends Resource
         $subtotal = $quantity * $unitPrice;
         
         $set('subtotal', number_format($subtotal, 2, '.', ''));
+        $set('unit_price', number_format($unitPrice, 2, '.', '')); // Formatage du prix unitaire
+        
+        // Sauvegarder la valeur numérique pour le calcul
+        $set('subtotal_value', $subtotal);
     }
 
     protected static function updateOrderTotals(Get $get, Set $set): void
@@ -291,11 +342,11 @@ class PurchaseOrderResource extends Resource
                     ->label('Statut'),
             ])
             ->actions([
-                Tables\Actions\Action::make('pdf')
+                /* Tables\Actions\Action::make('pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-document-download')
                     ->url(fn (PurchaseOrder $record) => route('purchase-orders.pdf', $record))
-                    ->openUrlInNewTab(),
+                    ->openUrlInNewTab(), */
                     
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
