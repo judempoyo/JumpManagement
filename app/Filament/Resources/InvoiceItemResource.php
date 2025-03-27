@@ -17,7 +17,10 @@ class InvoiceItemResource extends Resource
 {
     protected static ?string $model = InvoiceItem::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Ventes';
+
+
+    protected static ?string $navigationIcon = 'heroicon-o-bars-3-bottom-left';
 
     public static function form(Form $form): Form
     {

@@ -12,14 +12,22 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\MarkdownEditor;
+
 
 class UnitResource extends Resource
 {
     protected static ?string $model = Unit::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-tag';
+    protected static ?string $navigationIcon = 'heroicon-o-scale';
 
-    protected static ?string $navigationGroup = 'Shop';
+    protected static ?string $modelLabel = 'Unite';
+
+    protected static ?string $navigationLabel = 'Unites';
+
+    protected static ?string $navigationGroup = 'Gestion des stocks';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
@@ -27,9 +35,9 @@ class UnitResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required(),
-                    Forms\Components\Textarea::make('description')
-                    ->maxLength(500)
-                    ->columnSpanFull(),
+                Forms\Components\MarkdownEditor::make('description')
+                    ->label('Description')
+                    ->columnSpan(2),
             ]);
     }
 
@@ -61,6 +69,9 @@ class UnitResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make(),
             ]);
     }
 

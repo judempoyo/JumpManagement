@@ -11,7 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
-
+use Filament\Forms\Components\MarkdownEditor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -20,7 +20,13 @@ class CategoryResource extends Resource
     protected static ?string $model = Category::class;
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?string $navigationGroup = 'Shop';
+    protected static ?string $modelLabel = 'Categorie';
+
+    protected static ?string $navigationLabel = 'Categories';
+
+    protected static ?string $navigationGroup = 'Gestion des stocks';
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Form $form): Form
     {
@@ -37,9 +43,9 @@ class CategoryResource extends Resource
                     Forms\Components\TextInput::make('slug')
                         ->required()
                         ->maxLength(255),
-                    Forms\Components\Textarea::make('description')
-                        ->maxLength(500)
-                        ->columnSpanFull()
+                Forms\Components\MarkdownEditor::make('description')
+                        ->label('Description')
+                        ->columnSpan(2),
             ]);
     }
 
@@ -76,6 +82,9 @@ class CategoryResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make(),
             ]);
     }
 
