@@ -16,8 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class FinancialEntryResource extends Resource
 {
     protected static ?string $model = FinancialEntry::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationGroup = 'Finance';
+    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
 
     public static function form(Form $form): Form
     {
@@ -56,46 +56,62 @@ class FinancialEntryResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('type')
-                    ->searchable(),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'debt' => 'danger',
+                        'receivable' => 'success',
+                    }),
+                Tables\Columns\TextColumn::make('partner.name')
+                    ->label('Partenaire'),
                 Tables\Columns\TextColumn::make('total_amount')
-                    ->numeric()
+                    ->money('USD')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('remaining_amount')
-                    ->numeric()
+                    ->money('USD')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('start_date')
-                    ->date()
-                    ->sortable(),
+                    Tables\Columns\IconColumn::make('is_paid')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('due_date')
                     ->date()
                     ->sortable(),
-                Tables\Columns\IconColumn::make('is_paid')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('source_document_id')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('source_document_type')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('partner_id')
-                    ->numeric()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('partner_type')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'debt' => 'Dettes',
+                        'receivable' => 'Créances',
+                    ]),
+                Tables\Filters\Filter::make('is_paid')
+                    ->query(fn (Builder $query): Builder => $query->where('is_paid', false))
+                    ->label('Unpaid only'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('register_payment')
+                    ->icon('heroicon-o-banknotes')
+                    ->form([
+                        Forms\Components\TextInput::make('amount')
+                            ->numeric()
+                            ->required(),
+                        Forms\Components\DatePicker::make('payment_date')
+                            ->default(now()),
+                        Forms\Components\Select::make('payment_method')
+                            ->options([
+                                'cash' => 'Espèces',
+                                'check' => 'Chèque',
+                                'transfer' => 'Virement',
+                                'card' => 'Carte bancaire',
+                            ]),
+                    ])
+                    ->action(function (FinancialEntry $record, array $data): void {
+                        $record->payments()->create([
+                            'amount' => $data['amount'],
+                            'payment_date' => $data['payment_date'],
+                            'payment_method' => $data['payment_method'],
+                            'user_id' => auth()->id(),
+                        ]);
+                        $record->updateBalance();
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
