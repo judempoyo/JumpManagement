@@ -16,12 +16,9 @@ return new class extends Migration
             $table->integer('quantity')->default(0);
             $table->decimal('unit_price', 24, 6)->default(0);
             $table->decimal('subtotal', 24, 6)->default(0);
-            $table->unsignedBigInteger('invoice_id');
-            $table->unsignedBigInteger('product_id');
+            $table->foreignId('invoice_id')->constrained()->onDelete('cascade'); 
+            $table->foreignId('product_id')->constrained()->onDelete('cascade'); 
             $table->timestamps();
-        
-            $table->foreign('invoice_id')->references('id')->on('invoices');
-            $table->foreign('product_id')->references('id')->on('products');
         });
     }
 
