@@ -14,13 +14,11 @@ return new class extends Migration
         Schema::create('inventories', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->date('date');
-            $table->unsignedBigInteger('product_id');
+            $table->foreignId('product_id')->constrained()->onDelete('cascade'); 
             $table->integer('initial_stock')->default(0);
             $table->integer('final_stock')->default(0);
             $table->text('notes')->nullable();
             $table->timestamps();
-        
-            $table->foreign('product_id')->references('id')->on('products');
         });
     }
 
