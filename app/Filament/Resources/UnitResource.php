@@ -17,7 +17,9 @@ class UnitResource extends Resource
 {
     protected static ?string $model = Unit::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-tag';
+
+    protected static ?string $navigationGroup = 'Shop';
 
     public static function form(Form $form): Form
     {
@@ -25,7 +27,9 @@ class UnitResource extends Resource
             ->schema([
                 Forms\Components\TextInput::make('name')
                     ->required(),
-                Forms\Components\TextInput::make('description'),
+                    Forms\Components\Textarea::make('description')
+                    ->maxLength(500)
+                    ->columnSpanFull(),
             ]);
     }
 

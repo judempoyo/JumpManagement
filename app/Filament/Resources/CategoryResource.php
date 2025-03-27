@@ -7,7 +7,6 @@ use App\Filament\Resources\CategoryResource\RelationManagers;
 use App\Models\Category;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Components\RichEditor;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -38,9 +37,9 @@ class CategoryResource extends Resource
                     Forms\Components\TextInput::make('slug')
                         ->required()
                         ->maxLength(255),
-                    RichEditor::make('description') 
-                        ->required()
-                        ->columnSpanFull(),
+                    Forms\Components\Textarea::make('description')
+                        ->maxLength(500)
+                        ->columnSpanFull()
             ]);
     }
 
