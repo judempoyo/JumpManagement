@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class Expense extends Model
 {
     protected $fillable = [
-        'name',
-        'phone',
-        'email',
-        'adress',
+        'date',
+        'amount',
+        'reason',
+        'user_id',
     ];
     public function invoice()
     {

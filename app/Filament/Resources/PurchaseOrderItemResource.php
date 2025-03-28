@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Models\PurchaseOrder;
 use App\Filament\Resources\PurchaseOrderItemResource\Pages;
 use App\Filament\Resources\PurchaseOrderItemResource\RelationManagers;
 use App\Models\PurchaseOrderItem;
@@ -10,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -81,7 +83,12 @@ class PurchaseOrderItemResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('PurchaseOrder')
+                    ->relationship('PurchaseOrder', 'id')
+                    ->label('Bon de commande')
+                    ->searchable()
+                    ->preload(),
+                    
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
