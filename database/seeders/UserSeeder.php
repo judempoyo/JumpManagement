@@ -19,7 +19,7 @@ class UserSeeder extends Seeder
             'profile_photo' => 'users/admin.jpg',
             'is_active' => true,
         ]);
-        $admin->assignRole('admin');
+        $admin->assignRole('super_admin');
 
         // Créer un manager
         $manager = User::create([

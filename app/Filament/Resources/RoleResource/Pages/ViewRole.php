@@ -10,7 +10,7 @@ class ViewRole extends ViewRecord
 {
     protected static string $resource = RoleResource::class;
 
-    protected function getHeaderActions(): array
+    protected function getActions(): array
     {
         return [
             Actions\EditAction::make(),

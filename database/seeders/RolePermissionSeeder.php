@@ -15,7 +15,7 @@ class RolePermissionSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create permissions
-        $permissions = [
+        /* $permissions = [
             // Dashboard
             'view-dashboard',
 
@@ -78,13 +78,13 @@ class RolePermissionSeeder extends Seeder
         foreach ($permissions as $permission) {
             Permission::create(['name' => $permission]);
         }
-
+ */
         // Create roles and assign permissions
-        $admin = Role::create(['name' => 'admin']);
-        $admin->givePermissionTo(Permission::all());
-
+        $admin = Role::create(['name' => 'super_admin']);
+        /* $admin->givePermissionTo(Permission::all());
+ */
         $manager = Role::create(['name' => 'manager']);
-        $manager->givePermissionTo([
+        /* $manager->givePermissionTo([
             'view-dashboard',
             'view-products',
             'create-products',
@@ -108,19 +108,19 @@ class RolePermissionSeeder extends Seeder
             'manage-inventory',
             'view-reports',
         ]);
-
+ */
         $cashier = Role::create(['name' => 'cashier']);
-        $cashier->givePermissionTo([
+        /* $cashier->givePermissionTo([
             'view-dashboard',
             'view-products',
             'view-customers',
             'create-customers',
             'view-sales',
             'create-sales',
-        ]);
+        ]); */
 
         $stockManager = Role::create(['name' => 'stock-manager']);
-        $stockManager->givePermissionTo([
+       /*  $stockManager->givePermissionTo([
             'view-dashboard',
             'view-products',
             'view-categories',
@@ -128,6 +128,6 @@ class RolePermissionSeeder extends Seeder
             'view-purchases',
             'view-inventory',
             'manage-inventory',
-        ]);
+        ]); */
     }
 }
