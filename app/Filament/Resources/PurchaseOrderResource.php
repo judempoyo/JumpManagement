@@ -29,6 +29,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Number;
 
+
+
 class PurchaseOrderResource extends Resource
 {
     protected static ?string $model = PurchaseOrder::class;
@@ -47,25 +49,21 @@ class PurchaseOrderResource extends Resource
     {
         return $form
             ->schema([
-                Section::make('Informations générales')
+                Forms\Components\Section::make('Informations de base')
                     ->schema([
                         Select::make('supplier_id')
                             ->label('Fournisseur')
-                            ->required()
                             ->options(Supplier::all()->pluck('name', 'id'))
                             ->searchable()
-                            ->preload()
+                            ->required()
                             ->live()
                             ->afterStateUpdated(function ($state, Set $set) {
                                 $supplier = Supplier::find($state);
                                 if ($supplier) {
                                     $set('supplier_name', $supplier->name);
-                                    $set('supplier_phone', $supplier->phone);
-                                    $set('supplier_email', $supplier->email);
-                                    $set('supplier_adress', $supplier->adress);
                                 }
                             }),
-                        
+                            
                         DatePicker::make('date')
                             ->label('Date')
                             ->required()
@@ -79,285 +77,182 @@ class PurchaseOrderResource extends Resource
                         Toggle::make('paid')
                             ->label('Payé')
                             ->inline(false),
+                            
+                        TextInput::make('discount')
+                            ->label('Remise')
+                            ->numeric()
+                            ->prefix('$')
+                            ->default(0),
                         Forms\Components\Hidden::make('user_id')
                             ->default(auth()->id())
                             ->required(),
+                            
                         Textarea::make('notes')
                             ->label('Notes')
                             ->columnSpanFull(),
                     ])->columns(3),
-                
-                Section::make('Détails du fournisseur')
-                    ->schema([
-                        TextInput::make('supplier_name')
-                            ->label('Nom')
-                            ->disabled()
-                            ->dehydrated(false),
-                            
-                        TextInput::make('supplier_phone')
-                            ->label('Téléphone')
-                            ->disabled()
-                            ->dehydrated(false),
-                            
-                        TextInput::make('supplier_email')
-                            ->label('Email')
-                            ->disabled()
-                            ->dehydrated(false),
-                            
-                        TextInput::make('supplier_adress')
-                            ->label('Adresse')
-                            ->disabled()
-                            ->dehydrated(false)
-                            ->columnSpan(2),
-                    ])->columns(3)
-                    ->visible(fn (Get $get): bool => filled($get('supplier_id'))),
-                
-                Section::make('Articles commandés')
+                    
+                Forms\Components\Section::make('Articles')
                     ->schema([
                         Repeater::make('items')
                             ->relationship()
                             ->schema([
                                 Select::make('product_id')
-                                    ->label('Produit')
-                                    ->required()
-                                    ->options(Product::all()->pluck('name', 'id'))
-                                    ->searchable()
-                                    ->preload()
-                                    ->live()
-                                    ->afterStateUpdated(function ($state, Set $set) {
-                                        $product = Product::find($state);
-                                        if ($product) {
-                                            $set('unit_price', $product->purchase_cost);
-                                            $set('product_name', $product->name);
-                                            $set('product_code', $product->code);
-                                        }
-                                    }),
+                                ->label('Produit')
+                                ->options(function (Get $get) {
+                                    // Récupérer les produits déjà sélectionnés
+                                    $selectedProducts = collect($get('../../items'))
+                                        ->pluck('product_id')
+                                        ->filter()
+                                        ->toArray();
+                                    
+                                    // Exclure les produits déjà sélectionnés
+                                    return Product::query()
+                                        ->whereNotIn('id', $selectedProducts)
+                                        ->pluck('name', 'id');
+                                })
+                                ->searchable()
+                                ->required()
+                                ->live()
+                                ->afterStateUpdated(function ($state, Set $set) {
+                                    $product = Product::find($state);
+                                    if ($product) {
+                                        $set('unit_price', $product->purchase_cost);
+                                    }
+                                }),
                                     
                                 TextInput::make('quantity')
                                     ->label('Quantité')
-                                    ->required()
                                     ->numeric()
                                     ->default(1)
+                                    ->required()
                                     ->live()
                                     ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::updateItemTotals($get, $set);
+                                        self::updateItemSubtotal($get, $set);
                                     }),
                                     
                                 TextInput::make('unit_price')
                                     ->label('Prix unitaire')
-                                    ->required()
                                     ->numeric()
+                                    ->prefix('$')
+                                    ->required()
                                     ->live()
                                     ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::updateItemTotals($get, $set);
+                                        self::updateItemSubtotal($get, $set);
                                     }),
                                     
                                 TextInput::make('subtotal')
                                     ->label('Sous-total')
+                                    ->prefix('$')
                                     ->readOnly()
-                                    ->numeric()
-                                    ->dehydrated(false),
-                                    
-                                // Champs cachés pour affichage seulement
-                                TextInput::make('product_name')
-                                    ->label('Nom produit')
-                                    ->disabled()
-                                    ->dehydrated(false),
-                                    
-                                TextInput::make('product_code')
-                                    ->label('Code produit')
-                                    ->disabled()
-                                    ->dehydrated(false),
+                                    ->numeric(),
                             ])
-                            ->columns(5)
-                            ->columnSpanFull()
-                            ->itemLabel(fn (array $state): ?string => $state['product_name'] ?? null)
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set) {
-                                self::updateOrderTotals($get, $set);
-                            }),
-                    ]),
-                
-                Section::make('Totaux')
+                            ->columns(4)
+                            ->itemLabel(fn (array $state): ?string => Product::find($state['product_id'])?->name ?? null)
+                            ->addActionLabel('Ajouter un article')
+                            ->minItems(1)
+                            ->reorderable()
+                            ->cloneable()
+                            ->collapsible(),
+                    ])
+                    ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                        // S'assurer qu'un produit n'est pas ajouté plusieurs fois
+                        $productIds = array_column($data['items'] ?? [], 'product_id');
+                        if (count($productIds) !== count(array_unique($productIds))) {
+                            throw new \Exception('Un produit ne peut être ajouté qu\'une seule fois');
+                        }
+                        return $data;
+                    }),
+                    
+                Forms\Components\Section::make('Résumé')
                     ->schema([
-                        TextInput::make('discount')
-                            ->label('Remise')
-                            ->numeric()
-                            ->default(0)
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set) {
-                                self::updateOrderTotals($get, $set);
-                            }),
-                            
                         TextInput::make('total')
-                            ->label('Total brut')
-                            ->readOnly()
+                            ->label('Total')
+                            ->prefix('$')
                             ->numeric()
-                            ->dehydrated(false),
+                            ->readOnly()
+                            ->default(0),
                             
                         TextInput::make('amount_payable')
-                            ->label('Net à payer')
-                            ->readOnly()
+                            ->label('Montant à payer')
+                            ->prefix('$')
                             ->numeric()
-                            ->dehydrated(false),
-                    ])->columns(3),
+                            ->readOnly()
+                            ->default(0),
+                    ])->columns(2),
             ]);
     }
 
-    public static function afterCreate(PurchaseOrder $purchaseOrder)
-{
-    // Calculer et sauvegarder les totaux
-    $purchaseOrder->refresh(); // Recharger les relations
-    
-    $total = $purchaseOrder->items->sum('subtotal');
-    $amountPayable = $total - $purchaseOrder->discount;
-    
-    $purchaseOrder->update([
-        'total' => $total,
-        'amount_payable' => $amountPayable
-    ]);
-
-    foreach ($purchaseOrder->items as $item) {
-        // Mettre à jour le stock du produit
-        $product = $item->product;
-        $product->quantity_in_stock += $item->quantity;
-        $product->save();
-
-        // Créer l'entrée d'inventaire
-        Inventory::create([
-            'date' => $purchaseOrder->date,
-            'product_id' => $product->id,
-            'initial_stock' => $product->quantity_in_stock - $item->quantity,
-            'final_stock' => $product->quantity_in_stock,
-            'notes' => 'Approvisionnement via bon de commande #' . $purchaseOrder->id,
-            'user_id' => $purchaseOrder->user_id
-        ]);
-    }
-}
-
-    public static function afterDelete(PurchaseOrder $purchaseOrder)
+    protected static function updateItemSubtotal(Get $get, Set $set): void
     {
-        foreach ($purchaseOrder->items as $item) {
-            // Revert product stock
-            $product = $item->product;
-            $product->quantity_in_stock -= $item->quantity;
-            $product->save();
-
-            // Delete related inventory records
-            Inventory::where('notes', 'like', '%bon de commande #' . $purchaseOrder->id . '%')
-                ->delete();
+        $quantity = $get('quantity');
+        $unitPrice = $get('unit_price');
+        
+        if ($quantity && $unitPrice) {
+            $subtotal = $quantity * $unitPrice;
+            $set('subtotal', number_format($subtotal, 2, '.', ''));
+            
+            // Update order totals
+            $items = $get('../../items');
+            $total = collect($items)->sum('subtotal');
+            $discount = $get('discount') ?? 0;
+            $amountPayable = $total - $discount;
+            
+            $set('../../total', number_format($total, 2, '.', ''));
+            $set('../../amount_payable', number_format($amountPayable, 2, '.', ''));
         }
-    }
-    protected static function updateItemTotals(Get $get, Set $set): void
-    {
-        $quantity = (float) $get('quantity');
-        $unitPrice = (float) $get('unit_price');
-        
-        $subtotal = $quantity * $unitPrice;
-        
-        $set('subtotal', number_format($subtotal, 2, '.', ''));
-        $set('unit_price', number_format($unitPrice, 2, '.', '')); // Formatage du prix unitaire
-        
-        // Sauvegarder la valeur numérique pour le calcul
-        $set('subtotal_value', $subtotal);
-    }
-
-    protected static function updateOrderTotals(Get $get, Set $set): void
-    {
-        $items = $get('items');
-        $discount = (float) $get('discount') ?? 0;
-        
-        $total = collect($items)->reduce(function ($carry, $item) {
-            return $carry + ((float) $item['subtotal'] ?? 0);
-        }, 0);
-        
-        $amountPayable = $total - $discount;
-        
-        $set('total', number_format($total, 2, '.', ''));
-        $set('amount_payable', number_format($amountPayable, 2, '.', ''));
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('supplier.name')
+                Tables\Columns\TextColumn::make('supplier.name')
                     ->label('Fournisseur')
-                    ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
                     
-                TextColumn::make('date')
+                Tables\Columns\TextColumn::make('date')
                     ->label('Date')
                     ->date()
                     ->sortable(),
                     
-                TextColumn::make('time')
-                    ->label('Heure')
-                    ->time(),
-                    
-                TextColumn::make('total')
+                Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('USD')
                     ->sortable(),
                     
-                TextColumn::make('amount_payable')
-                    ->label('Net à payer')
-                    ->money('USD'),
+                Tables\Columns\IconColumn::make('paid')
+                    ->label('Payé')
+                    ->boolean(),
                     
-                BadgeColumn::make('paid')
-                    ->label('Statut paiement')
-                    ->colors([
-                        'danger' => false,
-                        'success' => true,
-                    ])
-                    ->formatStateUsing(fn (bool $state): string => $state ? 'Payé' : 'Impayé'),
-                    
-                BadgeColumn::make('status')
-                    ->label('Statut')
-                    ->colors([
-                        'warning' => 'draft',
-                        'success' => 'completed',
-                        'danger' => 'cancelled',
-                    ]),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Créé le')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('supplier')
-                    ->relationship('supplier', 'name')
-                    ->label('Fournisseur'),
+                    ->relationship('supplier', 'name'),
                     
                 Tables\Filters\Filter::make('paid')
-                    ->label('Payé seulement')
-                    ->query(fn (Builder $query): Builder => $query->where('paid', true)),
-                    
-                Tables\Filters\Filter::make('unpaid')
-                    ->label('Impayé seulement')
-                    ->query(fn (Builder $query): Builder => $query->where('paid', false)),
-                    
-                Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'draft' => 'Brouillon',
-                        'completed' => 'Complété',
-                        'cancelled' => 'Annulé',
-                    ])
-                    ->label('Statut'),
+                    ->query(fn (Builder $query): Builder => $query->where('paid', true))
+                    ->label('Payés uniquement'),
             ])
             ->actions([
-                /* Tables\Actions\Action::make('pdf')
-                    ->label('PDF')
-                    ->icon('heroicon-o-document-download')
-                    ->url(fn (PurchaseOrder $record) => route('purchase-orders.pdf', $record))
-                    ->openUrlInNewTab(), */
-                    
+                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+               Tables\Actions\Action::make('pdf')
+                    ->label('PDF')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->url(fn (PurchaseOrder $record) => route('purchase-orders.pdf', $record))
+                    ->openUrlInNewTab(), 
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ])
-            ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
             ]);
     }
 

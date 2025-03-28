@@ -18,6 +18,10 @@ class PurchaseOrder extends Model
         'paid',
         'notes',
     ];
+
+    protected $casts = [
+        'date' => 'datetime',
+    ];
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
