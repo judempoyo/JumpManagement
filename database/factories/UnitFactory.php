@@ -17,7 +17,7 @@ class UnitFactory extends Factory
     public function definition(): array
     {
        
-            $units = ['Pièce', 'Kg', 'Litre', 'Mètre', 'Boîte', 'Carton'];
+            $units = ['Pièce', 'Kg', 'Litre', 'Mètre', 'Boîte', 'Carton', 'Paquet', 'Sachet', 'Rouleau', 'Bouteille'];
         
             return [
                 'name' => $this->faker->unique()->randomElement($units),
