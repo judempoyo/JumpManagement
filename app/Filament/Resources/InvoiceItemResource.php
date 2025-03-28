@@ -4,23 +4,29 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\InvoiceItemResource\Pages;
 use App\Filament\Resources\InvoiceItemResource\RelationManagers;
+use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\SelectFilter;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class InvoiceItemResource extends Resource
 {
     protected static ?string $model = InvoiceItem::class;
+    protected static ?string $navigationIcon = 'heroicon-o-bars-3-bottom-left';
+    protected static ?string $modelLabel = 'Ligne facture';
+
+    protected static ?string $navigationLabel = 'Ligne factures';
 
     protected static ?string $navigationGroup = 'Ventes';
 
-
-    protected static ?string $navigationIcon = 'heroicon-o-bars-3-bottom-left';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
@@ -76,7 +82,11 @@ class InvoiceItemResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('Invoice')
+                    ->relationship('Invoice', 'id')
+                    ->label('Facture')
+                    ->searchable()
+                    ->preload(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

@@ -5,27 +5,47 @@ namespace App\Observers;
 use App\Models\PurchaseOrder;
 use App\Models\Product;
 use App\Models\Inventory;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseOrderObserver
 {
+  
     /**
      * Lorsqu'une commande est créée
      */
     public function created(PurchaseOrder $purchaseOrder)
     {
-        // Augmenter les stocks pour chaque article
-        foreach ($purchaseOrder->items as $item) {
-            $product = $item->product;
-            $product->quantity_in_stock += $item->quantity;
-            $product->save();
+        //dd($purchaseOrder);
 
-            // Enregistrer dans l'historique des stocks
+        // Chargez explicitement les items si la relation n'est pas déjà chargée
+        if (!$purchaseOrder->relationLoaded('items')) {
+            $purchaseOrder->load('items.product');
+        }
+    
+        foreach ($purchaseOrder->items as $item) {
+            // Chargez explicitement le produit si nécessaire
+            if (!$item->relationLoaded('product')) {
+                $item->load('product');
+            }
+    
+            $product = $item->product;
+            $initialStock = $product->quantity_in_stock;
+            
+            $product->quantity_in_stock += $item->quantity;
+            $product->save(); // Assurez-vous que save() est bien appelé
+    
+            \Log::info("Stock mis à jour pour produit {$product->id}", [
+                'ancien_stock' => $initialStock,
+                'quantite_ajoutee' => $item->quantity,
+                'nouveau_stock' => $product->quantity_in_stock
+            ]);
+    
             Inventory::create([
                 'date' => now(),
                 'product_id' => $product->id,
-                'initial_stock' => $product->quantity_in_stock - $item->quantity,
+                'initial_stock' => $initialStock,
                 'final_stock' => $product->quantity_in_stock,
-                'notes' => 'Réception de commande fournisseur #' . $purchaseOrder->id,
+                'notes' => 'Réception PO #' . $purchaseOrder->id,
             ]);
         }
     }

@@ -17,10 +17,15 @@ class SupplierResource extends Resource
 {
     protected static ?string $model = Supplier::class;
 
-    protected static ?string $navigationGroup = 'Achats';
-
     protected static ?string $navigationIcon = 'heroicon-o-truck';
 
+    protected static ?string $modelLabel = 'Fournisseur';
+
+    protected static ?string $navigationLabel = 'Fournisseurs';
+
+    protected static ?string $navigationGroup = 'Achats';
+
+    protected static ?int $navigationSort = 1;
     public static function form(Form $form): Form
     {
         return $form

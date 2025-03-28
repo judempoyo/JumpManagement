@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Models\PurchaseOrder;
 use App\Filament\Resources\PurchaseOrderItemResource\Pages;
 use App\Filament\Resources\PurchaseOrderItemResource\RelationManagers;
 use App\Models\PurchaseOrderItem;
@@ -10,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -17,10 +19,15 @@ class PurchaseOrderItemResource extends Resource
 {
     protected static ?string $model = PurchaseOrderItem::class;
 
+    protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
+
+    protected static ?string $modelLabel = 'Ligne Bon de commande';
+
+    protected static ?string $navigationLabel = 'Ligne bons de commande';
+
     protected static ?string $navigationGroup = 'Achats';
 
-
-    protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
@@ -76,7 +83,12 @@ class PurchaseOrderItemResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                //
+                SelectFilter::make('PurchaseOrder')
+                    ->relationship('PurchaseOrder', 'id')
+                    ->label('Bon de commande')
+                    ->searchable()
+                    ->preload(),
+                    
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
