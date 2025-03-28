@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Expense extends Model
 {
@@ -10,14 +11,16 @@ class Expense extends Model
         'date',
         'amount',
         'reason',
+        'invoice_id',
         'user_id',
     ];
-    public function invoice()
+
+    public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
     }
     
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

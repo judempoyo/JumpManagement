@@ -38,6 +38,10 @@ class InventoryResource extends Resource
     protected static ?string $navigationGroup = 'Gestion des stocks';
 
     protected static ?int $navigationSort = 3;
+    public static function getNavigationBadge(): ?string
+{
+    return static::getModel()::count();
+}
 
     public static function form(Form $form): Form
     {

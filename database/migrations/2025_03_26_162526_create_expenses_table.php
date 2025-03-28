@@ -12,16 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('expenses', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->id();
             $table->date('date');
-            $table->decimal('amount', 24, 6)->default(0);
+            $table->decimal('amount', 10, 2)->default(0);
             $table->string('reason', 150)->nullable();
-            $table->unsignedBigInteger('invoice_id')->nullable();
-            $table->unsignedBigInteger('user_id'); 
+            $table->foreignId('invoice_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
-        
-            $table->foreign('invoice_id')->references('id')->on('invoices');
-            $table->foreign('user_id')->references('id')->on('users');
         });
     }
 

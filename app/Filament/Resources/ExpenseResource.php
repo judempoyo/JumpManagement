@@ -27,72 +27,44 @@ class ExpenseResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+public static function getNavigationBadge(): ?string
+{
+    return static::getModel()::count();
+}
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informations de base')
+                Forms\Components\Section::make('Dépense')
                     ->schema([
-                        Forms\Components\TextInput::make('name')
-                            ->label('Nom')
+                        Forms\Components\DatePicker::make('date')
                             ->required()
-                            ->maxLength(255),
+                            ->native(false)
+                            ->default(now()),
                             
                         Forms\Components\TextInput::make('amount')
-                            ->label('Montant')
                             ->required()
                             ->numeric()
                             ->prefix('$'),
                             
-                        Forms\Components\Select::make('invoice_id')
-                            ->label('Facture associée')
-                            ->relationship('invoice', 'id')
+                        Forms\Components\TextInput::make('reason')
+                            ->required()
+                            ->maxLength(150),
+                            
+                        Forms\Components\Select::make('user_id')
+                            ->relationship('user', 'name')
+                            ->required()
                             ->searchable()
                             ->preload(),
                             
-                        Forms\Components\Select::make('user_id')
-                            ->label('Responsable')
-                            ->relationship('user', 'name')
-                            ->required(),
-                    ])->columns(2),
-                    
-                Forms\Components\Section::make('Coordonnées')
-                    ->schema([
-                        Forms\Components\TextInput::make('phone')
-                            ->label('Téléphone')
-                            ->tel()
-                            ->maxLength(20),
-                            
-                        Forms\Components\TextInput::make('email')
-                            ->label('Email')
-                            ->email()
-                            ->maxLength(255),
-                            
-                        Forms\Components\Textarea::make('address')
-                            ->label('Adresse')
-                            ->columnSpanFull(),
-                    ])->columns(2),
-                    
-                Forms\Components\Section::make('Détails supplémentaires')
-                    ->schema([
-                        Forms\Components\DatePicker::make('date')
-                            ->label('Date')
-                            ->required()
-                            ->default(now()),
-                            
-                        Forms\Components\Select::make('category')
-                            ->label('Catégorie')
-                            ->options([
-                                'office' => 'Bureau',
-                                'travel' => 'Voyage',
-                                'equipment' => 'Équipement',
-                                'other' => 'Autre',
-                            ]),
-                            
-                        Forms\Components\Textarea::make('description')
-                            ->label('Description')
-                            ->columnSpanFull(),
-                    ])->columns(2),
+                        Forms\Components\Select::make('invoice_id')
+                            ->relationship('invoice', 'id')
+                            ->searchable()
+                            ->preload()
+                            ->nullable()
+                            ->label('Facture associée'),
+                    ])
+                    ->columns(2),
             ]);
     }
 
@@ -100,52 +72,37 @@ class ExpenseResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Nom')
-                    ->searchable(),
-                    
-                Tables\Columns\TextColumn::make('amount')
-                    ->label('Montant')
-                    ->money('USD')
-                    ->sortable(),
-                    
                 Tables\Columns\TextColumn::make('date')
-                    ->label('Date')
                     ->date()
                     ->sortable(),
                     
-                Tables\Columns\TextColumn::make('category')
-                    ->label('Catégorie')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'office' => 'info',
-                        'travel' => 'warning',
-                        'equipment' => 'success',
-                        default => 'gray',
-                    }),
+                Tables\Columns\TextColumn::make('amount')
+                    ->money('USD')
+                    ->sortable(),
+                    
+                Tables\Columns\TextColumn::make('reason')
+                    ->searchable()
+                    ->limit(30),
                     
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Responsable'),
+                    ->label('Utilisateur')
+                    ->sortable(),
                     
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Créé le')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('invoice.number')
+                    ->label('Facture')
+                    ->placeholder('Aucune')
+                    ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category')
-                    ->label('Catégorie')
-                    ->options([
-                        'office' => 'Bureau',
-                        'travel' => 'Voyage',
-                        'equipment' => 'Équipement',
-                        'other' => 'Autre',
-                    ]),
-                    
                 Tables\Filters\SelectFilter::make('user')
-                    ->label('Responsable')
-                    ->relationship('user', 'name'),
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload(),
+                    
+                Tables\Filters\Filter::make('has_invoice')
+                    ->label('Avec facture')
+                    ->query(fn ($query) => $query->whereNotNull('invoice_id'))
+                    ->toggle(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
@@ -155,6 +112,9 @@ class ExpenseResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->emptyStateActions([
+                Tables\Actions\CreateAction::make(),
             ]);
     }
     public static function getRelations(): array
