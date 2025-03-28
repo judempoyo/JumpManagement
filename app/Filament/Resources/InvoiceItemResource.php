@@ -16,11 +16,14 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class InvoiceItemResource extends Resource
 {
     protected static ?string $model = InvoiceItem::class;
+    protected static ?string $navigationIcon = 'heroicon-o-bars-3-bottom-left';
+    protected static ?string $modelLabel = 'Ligne facture';
+
+    protected static ?string $navigationLabel = 'Ligne factures';
 
     protected static ?string $navigationGroup = 'Ventes';
 
-
-    protected static ?string $navigationIcon = 'heroicon-o-bars-3-bottom-left';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
