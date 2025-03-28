@@ -28,14 +28,15 @@
         </div>
 
         <!-- Client -->
-        <div class="bg-gray-50 p-4 rounded-lg mb-8">
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">Client:</h3>
-            <p class="font-bold">{{ $invoice->customer->name }}</p>
-            <p class="text-gray-600">{{ $invoice->customer->adress }}</p>
-            <p class="text-gray-600">Téléphone: {{ $invoice->customer->phone }}</p>
-            <p class="text-gray-600">Email: {{ $invoice->customer->email }}</p>
-        </div>
-
+<div class="bg-gray-50 p-4 rounded-lg mb-8">
+    <h3 class="text-lg font-semibold text-gray-800 mb-2">Client:</h3>
+    <p class="font-bold">{{ $invoice->customer->name }}</p>
+    @if($invoice->customer_id)
+        <p class="text-gray-600">{{ $invoice->customer->address }}</p>
+        <p class="text-gray-600">Téléphone: {{ $invoice->customer->phone }}</p>
+        <p class="text-gray-600">Email: {{ $invoice->customer->email }}</p>
+    @endif
+</div>
         <!-- Articles -->
         <div class="mb-8">
             <h3 class="text-lg font-semibold mb-4">Articles</h3>
