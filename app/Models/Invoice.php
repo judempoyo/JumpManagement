@@ -67,4 +67,33 @@ public function createReceivable()
         'partner_type' => Customer::class,
     ]);
 }
+protected static function booted()
+    {
+        static::created(function ($invoice) {
+            foreach ($invoice->items as $item) {
+                $product = $item->product;
+                $product->updateStock(
+                    $item->quantity,
+                    'subtract',
+                    "Vente facture #{$invoice->id}"
+                );
+                $product->checkStockAlert();
+            }
+        });
+
+        static::updated(function ($invoice) {
+            // Gérer les modifications si nécessaire
+        });
+
+        static::deleted(function ($invoice) {
+            foreach ($invoice->items as $item) {
+                $product = $item->product;
+                $product->updateStock(
+                    $item->quantity,
+                    'add',
+                    "Annulation facture #{$invoice->id}"
+                );
+            }
+        });
+    }
 }

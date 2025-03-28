@@ -9,14 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class PurchaseOrderObserver
 {
-    public function creating(PurchaseOrder $purchaseOrder)
-{
-    if (!$purchaseOrder->relationLoaded('items')) {
-        $purchaseOrder->load('items');
-    }
-    
-    dd($purchaseOrder);
-}
+  
     /**
      * Lorsqu'une commande est créée
      */

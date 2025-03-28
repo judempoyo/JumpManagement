@@ -46,4 +46,39 @@ class Product extends Model
     {
         return $this->hasMany(Inventory::class);
     }
+
+    public function updateStock($quantity, $operation = 'add', $notes = '')
+    {
+        $oldQuantity = $this->quantity_in_stock;
+        
+        if ($operation === 'add') {
+            $this->quantity_in_stock += $quantity;
+        } elseif ($operation === 'subtract') {
+            $this->quantity_in_stock -= $quantity;
+        } elseif ($operation === 'set') {
+            $this->quantity_in_stock = $quantity;
+        }
+        
+        $this->save();
+        
+        // Enregistrer dans l'inventaire
+        Inventory::create([
+            'date' => now(),
+            'product_id' => $this->id,
+            'initial_stock' => $oldQuantity,
+            'final_stock' => $this->quantity_in_stock,
+            'notes' => $notes,
+        ]);
+        
+        return $this;
+    }
+    
+    public function checkStockAlert()
+    {
+        if ($this->quantity_in_stock <= $this->alert_quantity) {
+            // Vous pouvez implémenter une notification ici
+            return true;
+        }
+        return false;
+    }
 }
