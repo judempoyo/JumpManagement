@@ -115,15 +115,32 @@ class InvoiceResource extends Resource
                                         }
                                     }),
                                     
-                                TextInput::make('quantity')
+                                    TextInput::make('quantity')
                                     ->label('Quantité')
                                     ->numeric()
                                     ->default(1)
                                     ->required()
                                     ->minValue(1)
+                                    ->maxValue(function (Get $get, $state) {
+                                        $product = Product::find($get('product_id'));
+                                        return $product ? $product->quantity_in_stock : 0;
+                                    })
                                     ->live()
                                     ->afterStateUpdated(function (Get $get, Set $set) {
                                         self::updateItemSubtotal($get, $set);
+                                    })
+                                    ->hint(function (Get $get) {
+                                        $product = Product::find($get('product_id'));
+                                        return $product ? 'Stock disponible: ' . $product->quantity_in_stock : '';
+                                    })
+                                    ->helperText(function (Get $get, $state) {
+                                        $product = Product::find($get('product_id'));
+                                        if (!$product) return '';
+                                        
+                                        if ($state > $product->quantity_in_stock) {
+                                            return 'Attention: Quantité supérieure au stock disponible!';
+                                        }
+                                        return '';
                                     }),
                                     
                                 TextInput::make('unit_price')
