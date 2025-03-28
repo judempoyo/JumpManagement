@@ -8,6 +8,7 @@ class Invoice extends Model
 {
     protected $fillable = [
         'customer_id',
+        'customer_name',
         'date',
         'time',
         'total',
@@ -24,9 +25,14 @@ class Invoice extends Model
         'date' => 'datetime',
     ];
     public function customer()
-    {
-        return $this->belongsTo(Customer::class);
-    }
+{
+    return $this->belongsTo(Customer::class)->withDefault([
+        'name' => $this->customer_name ?? 'Client passager',
+        'phone' => 'Non spécifié',
+        'email' => 'Non spécifié',
+        'adress' => 'Non spécifié',
+    ]);
+}
     
     public function user()
     {
@@ -35,7 +41,8 @@ class Invoice extends Model
     
     public function items()
     {
-        return $this->hasMany(InvoiceItem::class);
+        return $this->hasMany(InvoiceItem::class)->with('product');
+    
     }
    
     

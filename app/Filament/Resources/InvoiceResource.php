@@ -50,38 +50,16 @@ class InvoiceResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informations de base')
                     ->schema([
-                        // Modifiez le champ customer_id comme suit :
                         Select::make('customer_id')
                             ->label('Client')
-                            ->options(function () {
-                                return Customer::all()->pluck('name', 'id');
-                            })
-                            ->searchable()
-                            ->required()
-                            ->live()
-                            ->allowHtml()
-                            ->getSearchResultsUsing(function (string $search) {
-                                return Customer::where('name', 'like', "%{$search}%")
-                                    ->limit(50)
-                                    ->get()
-                                    ->pluck('name', 'id')
-                                    ->map(fn($name) => "
-            <div class='flex items-center'>
-                <span class='font-medium'>{$name}</span>
-            </div>
-        ");
-                            })
-                            ->getOptionLabelUsing(function ($value) {
-                                return $value === 'passenger'
-                                    ? '<div class="flex items-center"><span class="font-medium">Client passager</span></div>'
-                                    : Customer::find($value)?->name;
-                            })
                             ->options([
-                                'passenger' => 'Client passager',
+                                null => 'Client passager', // Valeur NULL pour les clients passagers
                                 ...Customer::all()->pluck('name', 'id')->toArray()
                             ])
+                            ->required()
+                            ->live()
                             ->afterStateUpdated(function ($state, Set $set) {
-                                if ($state === 'passenger') {
+                                if (is_null($state)) {
                                     $set('customer_name', 'Client passager');
                                 } else {
                                     $customer = Customer::find($state);
@@ -91,12 +69,14 @@ class InvoiceResource extends Resource
                                 }
                             }),
 
-                        // Ajoutez un champ pour le nom du client passager
+                        // Ajoutez ce champ conditionnel
                         TextInput::make('customer_name')
-                            ->label('Nom du client')
-                            ->visible(fn(Get $get): bool => $get('customer_id') === 'passenger')
-                            ->required(fn(Get $get): bool => $get('customer_id') === 'passenger'),
-
+                            ->label('Nom du client passager')
+                            ->required(fn(Get $get): bool => is_null($get('customer_id')))
+                            ->visible(fn(Get $get): bool => is_null($get('customer_id'))),
+                        Forms\Components\Hidden::make('user_id')
+                            ->default(auth()->id())
+                            ->required(),
                         DatePicker::make('date')
                             ->label('Date')
                             ->required()

@@ -33,10 +33,9 @@ class PurchaseOrder extends Model
     }
     
     public function items()
-    {
-        return $this->hasMany(PurchaseOrderItem::class);
-    }
-    
+{
+    return $this->hasMany(PurchaseOrderItem::class)->with('product');
+}
     public function financialEntries()
     {
         return $this->morphMany(FinancialEntry::class, 'sourceDocument');
