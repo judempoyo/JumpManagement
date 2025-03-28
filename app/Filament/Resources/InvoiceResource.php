@@ -46,48 +46,82 @@ class InvoiceResource extends Resource
             ->schema([
                 Forms\Components\Section::make('Informations de base')
                     ->schema([
+                        // Modifiez le champ customer_id comme suit :
                         Select::make('customer_id')
                             ->label('Client')
-                            ->options(Customer::all()->pluck('name', 'id'))
+                            ->options(function () {
+                                return Customer::all()->pluck('name', 'id');
+                            })
                             ->searchable()
                             ->required()
                             ->live()
+                            ->allowHtml()
+                            ->getSearchResultsUsing(function (string $search) {
+                                return Customer::where('name', 'like', "%{$search}%")
+                                    ->limit(50)
+                                    ->get()
+                                    ->pluck('name', 'id')
+                                    ->map(fn($name) => "
+            <div class='flex items-center'>
+                <span class='font-medium'>{$name}</span>
+            </div>
+        ");
+                            })
+                            ->getOptionLabelUsing(function ($value) {
+                                return $value === 'passenger'
+                                    ? '<div class="flex items-center"><span class="font-medium">Client passager</span></div>'
+                                    : Customer::find($value)?->name;
+                            })
+                            ->options([
+                                'passenger' => 'Client passager',
+                                ...Customer::all()->pluck('name', 'id')->toArray()
+                            ])
                             ->afterStateUpdated(function ($state, Set $set) {
-                                $customer = Customer::find($state);
-                                if ($customer) {
-                                    $set('customer_name', $customer->name);
+                                if ($state === 'passenger') {
+                                    $set('customer_name', 'Client passager');
+                                } else {
+                                    $customer = Customer::find($state);
+                                    if ($customer) {
+                                        $set('customer_name', $customer->name);
+                                    }
                                 }
                             }),
-                            
+
+                        // Ajoutez un champ pour le nom du client passager
+                        TextInput::make('customer_name')
+                            ->label('Nom du client')
+                            ->visible(fn(Get $get): bool => $get('customer_id') === 'passenger')
+                            ->required(fn(Get $get): bool => $get('customer_id') === 'passenger'),
+
                         DatePicker::make('date')
                             ->label('Date')
                             ->required()
                             ->default(now()),
-                            
+
                         TimePicker::make('time')
                             ->label('Heure')
                             ->required()
                             ->default(now()),
-                            
+
                         Toggle::make('paid')
                             ->label('Payée')
                             ->inline(false),
-                            
+
                         Toggle::make('delivered')
                             ->label('Livrée')
                             ->inline(false),
-                            
+
                         TextInput::make('discount')
                             ->label('Remise')
                             ->numeric()
                             ->prefix('$')
                             ->default(0),
-                            
+
                         Textarea::make('notes')
                             ->label('Notes')
                             ->columnSpanFull(),
                     ])->columns(2),
-                    
+
                 Forms\Components\Section::make('Articles')
                     ->schema([
                         Repeater::make('items')
@@ -100,7 +134,7 @@ class InvoiceResource extends Resource
                                             ->pluck('product_id')
                                             ->filter()
                                             ->toArray();
-                                        
+
                                         return Product::query()
                                             ->whereNotIn('id', $selectedProducts)
                                             ->pluck('name', 'id');
@@ -114,8 +148,8 @@ class InvoiceResource extends Resource
                                             $set('unit_price', $product->selling_price);
                                         }
                                     }),
-                                    
-                                    TextInput::make('quantity')
+
+                                TextInput::make('quantity')
                                     ->label('Quantité')
                                     ->numeric()
                                     ->default(1)
@@ -135,14 +169,15 @@ class InvoiceResource extends Resource
                                     })
                                     ->helperText(function (Get $get, $state) {
                                         $product = Product::find($get('product_id'));
-                                        if (!$product) return '';
-                                        
+                                        if (!$product)
+                                            return '';
+
                                         if ($state > $product->quantity_in_stock) {
                                             return 'Attention: Quantité supérieure au stock disponible!';
                                         }
                                         return '';
                                     }),
-                                    
+
                                 TextInput::make('unit_price')
                                     ->label('Prix unitaire')
                                     ->numeric()
@@ -152,7 +187,7 @@ class InvoiceResource extends Resource
                                     ->afterStateUpdated(function (Get $get, Set $set) {
                                         self::updateItemSubtotal($get, $set);
                                     }),
-                                    
+
                                 TextInput::make('subtotal')
                                     ->label('Sous-total')
                                     ->prefix('$')
@@ -160,7 +195,7 @@ class InvoiceResource extends Resource
                                     ->numeric(),
                             ])
                             ->columns(4)
-                            ->itemLabel(fn (array $state): ?string => Product::find($state['product_id'])?->name ?? null)
+                            ->itemLabel(fn(array $state): ?string => Product::find($state['product_id'])?->name ?? null)
                             ->addActionLabel('Ajouter un article')
                             ->minItems(1)
                             ->reorderable()
@@ -174,7 +209,7 @@ class InvoiceResource extends Resource
                                 return $data;
                             }),
                     ]),
-                    
+
                 Forms\Components\Section::make('Résumé')
                     ->schema([
                         TextInput::make('total')
@@ -183,7 +218,7 @@ class InvoiceResource extends Resource
                             ->numeric()
                             ->readOnly()
                             ->default(0),
-                            
+
                         TextInput::make('amount_payable')
                             ->label('Montant à payer')
                             ->prefix('$')
@@ -198,17 +233,17 @@ class InvoiceResource extends Resource
     {
         $quantity = $get('quantity');
         $unitPrice = $get('unit_price');
-        
+
         if ($quantity && $unitPrice) {
             $subtotal = $quantity * $unitPrice;
             $set('subtotal', number_format($subtotal, 2, '.', ''));
-            
+
             // Update invoice totals
             $items = $get('../../items');
             $total = collect($items)->sum('subtotal');
             $discount = $get('discount') ?? 0;
             $amountPayable = $total - $discount;
-            
+
             $set('../../total', number_format($total, 2, '.', ''));
             $set('../../amount_payable', number_format($amountPayable, 2, '.', ''));
         }
@@ -222,25 +257,25 @@ class InvoiceResource extends Resource
                     ->label('Client')
                     ->sortable()
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('date')
                     ->label('Date')
                     ->date()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('USD')
                     ->sortable(),
-                    
+
                 Tables\Columns\IconColumn::make('paid')
                     ->label('Payée')
                     ->boolean(),
-                    
+
                 Tables\Columns\IconColumn::make('delivered')
                     ->label('Livrée')
                     ->boolean(),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Créée le')
                     ->dateTime()
@@ -250,13 +285,13 @@ class InvoiceResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('customer')
                     ->relationship('customer', 'name'),
-                    
+
                 Tables\Filters\Filter::make('paid')
-                    ->query(fn (Builder $query): Builder => $query->where('paid', true))
+                    ->query(fn(Builder $query): Builder => $query->where('paid', true))
                     ->label('Payées uniquement'),
-                    
+
                 Tables\Filters\Filter::make('delivered')
-                    ->query(fn (Builder $query): Builder => $query->where('delivered', true))
+                    ->query(fn(Builder $query): Builder => $query->where('delivered', true))
                     ->label('Livrées uniquement'),
             ])
             ->actions([
@@ -265,7 +300,7 @@ class InvoiceResource extends Resource
                 Tables\Actions\Action::make('pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->url(fn (Invoice $record) => route('invoices.pdf', $record))
+                    ->url(fn(Invoice $record) => route('invoices.pdf', $record))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
