@@ -19,6 +19,10 @@ class Invoice extends Model
         'delivered',
         'notes',
     ];
+
+    protected $casts = [
+        'date' => 'datetime',
+    ];
     public function customer()
     {
         return $this->belongsTo(Customer::class);

@@ -29,6 +29,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Number;
 
+
 class InvoiceResource extends Resource
 {
     protected static ?string $model = Invoice::class;
@@ -39,33 +40,25 @@ class InvoiceResource extends Resource
 
     protected static ?string $navigationLabel = 'Factures';
 
-    protected static ?string $navigationGroup = 'Ventes';
-
-    protected static ?int $navigationSort = 1;
-
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Informations générales')
+                Forms\Components\Section::make('Informations de base')
                     ->schema([
                         Select::make('customer_id')
                             ->label('Client')
-                            ->required()
                             ->options(Customer::all()->pluck('name', 'id'))
                             ->searchable()
-                            ->preload()
+                            ->required()
                             ->live()
                             ->afterStateUpdated(function ($state, Set $set) {
                                 $customer = Customer::find($state);
                                 if ($customer) {
                                     $set('customer_name', $customer->name);
-                                    $set('customer_phone', $customer->phone);
-                                    $set('customer_email', $customer->email);
-                                    $set('customer_adress', $customer->adress);
                                 }
                             }),
-                        
+                            
                         DatePicker::make('date')
                             ->label('Date')
                             ->required()
@@ -77,328 +70,194 @@ class InvoiceResource extends Resource
                             ->default(now()),
                             
                         Toggle::make('paid')
-                            ->label('Payé')
+                            ->label('Payée')
                             ->inline(false),
                             
                         Toggle::make('delivered')
-                            ->label('Livré')
+                            ->label('Livrée')
                             ->inline(false),
                             
-                        Select::make('status')
-                            ->label('Statut')
-                            ->options([
-                                'draft' => 'Brouillon',
-                                'sent' => 'Envoyée',
-                                'paid' => 'Payée',
-                                'cancelled' => 'Annulée',
-                            ])
-                            ->default('draft'),
-                        Forms\Components\Hidden::make('user_id')
-                            ->default(auth()->id())
-                            ->required(),
+                        TextInput::make('discount')
+                            ->label('Remise')
+                            ->numeric()
+                            ->prefix('$')
+                            ->default(0),
+                            
                         Textarea::make('notes')
                             ->label('Notes')
                             ->columnSpanFull(),
-                    ])->columns(3),
-                
-                Section::make('Détails du client')
-                    ->schema([
-                        TextInput::make('customer_name')
-                            ->label('Nom')
-                            ->disabled()
-                            ->dehydrated(false),
-                            
-                        TextInput::make('customer_phone')
-                            ->label('Téléphone')
-                            ->disabled()
-                            ->dehydrated(false),
-                            
-                        TextInput::make('customer_email')
-                            ->label('Email')
-                            ->disabled()
-                            ->dehydrated(false),
-                            
-                        TextInput::make('customer_adress')
-                            ->label('Adresse')
-                            ->disabled()
-                            ->dehydrated(false)
-                            ->columnSpan(2),
-                    ])->columns(3)
-                    ->visible(fn (Get $get): bool => filled($get('customer_id'))),
-                
-                Section::make('Articles facturés')
+                    ])->columns(2),
+                    
+                Forms\Components\Section::make('Articles')
                     ->schema([
                         Repeater::make('items')
                             ->relationship()
                             ->schema([
                                 Select::make('product_id')
                                     ->label('Produit')
-                                    ->required()
-                                    ->options(Product::all()->pluck('name', 'id'))
+                                    ->options(function (Get $get) {
+                                        $selectedProducts = collect($get('../../items'))
+                                            ->pluck('product_id')
+                                            ->filter()
+                                            ->toArray();
+                                        
+                                        return Product::query()
+                                            ->whereNotIn('id', $selectedProducts)
+                                            ->pluck('name', 'id');
+                                    })
                                     ->searchable()
-                                    ->preload()
+                                    ->required()
                                     ->live()
                                     ->afterStateUpdated(function ($state, Set $set) {
                                         $product = Product::find($state);
                                         if ($product) {
                                             $set('unit_price', $product->selling_price);
-                                            $set('product_name', $product->name);
-                                            $set('product_code', $product->code);
                                         }
                                     }),
                                     
                                 TextInput::make('quantity')
                                     ->label('Quantité')
-                                    ->required()
                                     ->numeric()
                                     ->default(1)
+                                    ->required()
                                     ->minValue(1)
                                     ->live()
                                     ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::updateItemTotals($get, $set);
+                                        self::updateItemSubtotal($get, $set);
                                     }),
                                     
                                 TextInput::make('unit_price')
                                     ->label('Prix unitaire')
-                                    ->required()
                                     ->numeric()
+                                    ->prefix('$')
+                                    ->required()
                                     ->live()
                                     ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::updateItemTotals($get, $set);
+                                        self::updateItemSubtotal($get, $set);
                                     }),
                                     
                                 TextInput::make('subtotal')
                                     ->label('Sous-total')
+                                    ->prefix('$')
                                     ->readOnly()
-                                    ->numeric()
-                                    ->dehydrated(false),
-                                    
-                                // Champs cachés pour affichage seulement
-                                TextInput::make('product_name')
-                                    ->label('Nom produit')
-                                    ->disabled()
-                                    ->dehydrated(false),
-                                    
-                                TextInput::make('product_code')
-                                    ->label('Code produit')
-                                    ->disabled()
-                                    ->dehydrated(false),
+                                    ->numeric(),
                             ])
-                            ->columns(5)
-                            ->columnSpanFull()
-                            ->itemLabel(fn (array $state): ?string => $state['product_name'] ?? null)
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set) {
-                                self::updateInvoiceTotals($get, $set);
+                            ->columns(4)
+                            ->itemLabel(fn (array $state): ?string => Product::find($state['product_id'])?->name ?? null)
+                            ->addActionLabel('Ajouter un article')
+                            ->minItems(1)
+                            ->reorderable()
+                            ->cloneable()
+                            ->collapsible()
+                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                                $productIds = array_column($data['items'] ?? [], 'product_id');
+                                if (count($productIds) !== count(array_unique($productIds))) {
+                                    throw new \Exception('Un produit ne peut être ajouté qu\'une seule fois');
+                                }
+                                return $data;
                             }),
                     ]),
-                
-                Section::make('Totaux')
+                    
+                Forms\Components\Section::make('Résumé')
                     ->schema([
-                        TextInput::make('discount')
-                            ->label('Remise')
-                            ->numeric()
-                            ->default(0)
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set) {
-                                self::updateInvoiceTotals($get, $set);
-                            }),
-                            
                         TextInput::make('total')
-                            ->label('Total brut')
-                            ->readOnly()
+                            ->label('Total')
+                            ->prefix('$')
                             ->numeric()
-                            ->dehydrated(false),
+                            ->readOnly()
+                            ->default(0),
                             
                         TextInput::make('amount_payable')
-                            ->label('Net à payer')
-                            ->readOnly()
+                            ->label('Montant à payer')
+                            ->prefix('$')
                             ->numeric()
-                            ->dehydrated(false),
-                    ])->columns(3),
+                            ->readOnly()
+                            ->default(0),
+                    ])->columns(2),
             ]);
     }
 
-    public static function afterCreate(Invoice $invoice)
-{
-    // Calculer et sauvegarder les totaux
-    $invoice->refresh(); // Recharger les relations
-    
-    $total = $invoice->items->sum('subtotal');
-    $amountPayable = $total - $invoice->discount;
-    
-    $invoice->update([
-        'total' => $total,
-        'amount_payable' => $amountPayable
-    ]);
-
-    foreach ($invoice->items as $item) {
-        // Mettre à jour le stock du produit
-        $product = $item->product;
-        $product->quantity_in_stock -= $item->quantity;
-        $product->save();
-
-        // Créer l'entrée d'inventaire
-        Inventory::create([
-            'date' => $invoice->date,
-            'product_id' => $product->id,
-            'initial_stock' => $product->quantity_in_stock + $item->quantity,
-            'final_stock' => $product->quantity_in_stock,
-            'notes' => 'Vente via facture #' . $invoice->id,
-            'user_id' => $invoice->user_id
-        ]);
-    }
-}
-
-    public static function afterDelete(Invoice $invoice)
+    protected static function updateItemSubtotal(Get $get, Set $set): void
     {
-        foreach ($invoice->items as $item) {
-            // Revert product stock
-            $product = $item->product;
-            $product->quantity_in_stock += $item->quantity;
-            $product->save();
-
-            // Delete related inventory records
-            Inventory::where('notes', 'like', '%facture #' . $invoice->id . '%')
-                ->delete();
+        $quantity = $get('quantity');
+        $unitPrice = $get('unit_price');
+        
+        if ($quantity && $unitPrice) {
+            $subtotal = $quantity * $unitPrice;
+            $set('subtotal', number_format($subtotal, 2, '.', ''));
+            
+            // Update invoice totals
+            $items = $get('../../items');
+            $total = collect($items)->sum('subtotal');
+            $discount = $get('discount') ?? 0;
+            $amountPayable = $total - $discount;
+            
+            $set('../../total', number_format($total, 2, '.', ''));
+            $set('../../amount_payable', number_format($amountPayable, 2, '.', ''));
         }
-    }
-    protected static function updateItemTotals(Get $get, Set $set): void
-    {
-        $quantity = (float) $get('quantity');
-        $unitPrice = (float) $get('unit_price');
-        
-        $subtotal = $quantity * $unitPrice;
-        
-        $set('subtotal', number_format($subtotal, 2, '.', ''));
-        $set('unit_price', number_format($unitPrice, 2, '.', '')); // Formatage du prix unitaire
-        
-        // Sauvegarder la valeur numérique pour le calcul
-        $set('subtotal_value', $subtotal);
-    }
-
-    protected static function updateInvoiceTotals(Get $get, Set $set): void
-    {
-        $items = $get('items');
-        $discount = (float) $get('discount') ?? 0;
-        
-        $total = collect($items)->reduce(function ($carry, $item) {
-            return $carry + ((float) $item['subtotal'] ?? 0);
-        }, 0);
-        
-        $amountPayable = $total - $discount;
-        
-        $set('total', number_format($total, 2, '.', ''));
-        $set('amount_payable', number_format($amountPayable, 2, '.', ''));
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('customer.name')
+                Tables\Columns\TextColumn::make('customer.name')
                     ->label('Client')
-                    ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
                     
-                TextColumn::make('date')
+                Tables\Columns\TextColumn::make('date')
                     ->label('Date')
                     ->date()
                     ->sortable(),
                     
-                TextColumn::make('time')
-                    ->label('Heure')
-                    ->time(),
-                    
-                TextColumn::make('total')
+                Tables\Columns\TextColumn::make('total')
                     ->label('Total')
                     ->money('USD')
                     ->sortable(),
                     
-                TextColumn::make('amount_payable')
-                    ->label('Net à payer')
-                    ->money('USD'),
+                Tables\Columns\IconColumn::make('paid')
+                    ->label('Payée')
+                    ->boolean(),
                     
-                BadgeColumn::make('paid')
-                    ->label('Paiement')
-                    ->colors([
-                        'danger' => false,
-                        'success' => true,
-                    ])
-                    ->formatStateUsing(fn (bool $state): string => $state ? 'Payé' : 'Impayé'),
+                Tables\Columns\IconColumn::make('delivered')
+                    ->label('Livrée')
+                    ->boolean(),
                     
-                BadgeColumn::make('delivered')
-                    ->label('Livraison')
-                    ->colors([
-                        'danger' => false,
-                        'success' => true,
-                    ])
-                    ->formatStateUsing(fn (bool $state): string => $state ? 'Livré' : 'Non livré'),
-                    
-                BadgeColumn::make('status')
-                    ->label('Statut')
-                    ->colors([
-                        'gray' => 'draft',
-                        'warning' => 'sent',
-                        'success' => 'paid',
-                        'danger' => 'cancelled',
-                    ]),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Créée le')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('customer')
-                    ->relationship('customer', 'name')
-                    ->label('Client'),
+                    ->relationship('customer', 'name'),
                     
                 Tables\Filters\Filter::make('paid')
-                    ->label('Payé seulement')
-                    ->query(fn (Builder $query): Builder => $query->where('paid', true)),
-                    
-                Tables\Filters\Filter::make('unpaid')
-                    ->label('Impayé seulement')
-                    ->query(fn (Builder $query): Builder => $query->where('paid', false)),
+                    ->query(fn (Builder $query): Builder => $query->where('paid', true))
+                    ->label('Payées uniquement'),
                     
                 Tables\Filters\Filter::make('delivered')
-                    ->label('Livré seulement')
-                    ->query(fn (Builder $query): Builder => $query->where('delivered', true)),
-                    
-                Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'draft' => 'Brouillon',
-                        'sent' => 'Envoyée',
-                        'paid' => 'Payée',
-                        'cancelled' => 'Annulée',
-                    ])
-                    ->label('Statut'),
+                    ->query(fn (Builder $query): Builder => $query->where('delivered', true))
+                    ->label('Livrées uniquement'),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('pdf')
                     ->label('PDF')
-                    ->icon('heroicon-o-document-download')
+                    ->icon('heroicon-o-document-arrow-down')
                     ->url(fn (Invoice $record) => route('invoices.pdf', $record))
                     ->openUrlInNewTab(),
-                    
-                Tables\Actions\Action::make('mark_as_paid')
-                    ->label('Marquer comme payé')
-                    ->icon('heroicon-o-check-circle')
-                    ->action(function (Invoice $record) {
-                        $record->update(['paid' => true, 'status' => 'paid']);
-                        $record->createReceivable();
-                    })
-                    ->visible(fn (Invoice $record): bool => !$record->paid),
-                    
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
-            ])
-            ->emptyStateActions([
-                Tables\Actions\CreateAction::make(),
             ]);
     }
-    
+
     public static function getRelations(): array
     {
         return [
