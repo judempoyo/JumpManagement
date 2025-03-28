@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\Invoice
+use App\Models\Invoice;
+use App\Observers\InvoiceObserver;
+use App\Models\PurchaseOrder;
+use App\Observers\PurchaseOrderObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,5 +24,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Invoice::observe(InvoiceObserver::class);
+        PurchaseOrder::observe(PurchaseOrderObserver::class);
     }
 }
