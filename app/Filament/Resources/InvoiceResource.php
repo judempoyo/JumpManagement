@@ -40,6 +40,10 @@ class InvoiceResource extends Resource
 
     protected static ?string $navigationLabel = 'Factures';
 
+    protected static ?string $navigationGroup = 'Ventes';
+
+    protected static ?int $navigationSort = 1;
+
     public static function form(Form $form): Form
     {
         return $form
