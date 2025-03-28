@@ -17,10 +17,15 @@ class PurchaseOrderItemResource extends Resource
 {
     protected static ?string $model = PurchaseOrderItem::class;
 
+    protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
+
+    protected static ?string $modelLabel = 'Ligne Bon de commande';
+
+    protected static ?string $navigationLabel = 'Ligne bons de commande';
+
     protected static ?string $navigationGroup = 'Achats';
 
-
-    protected static ?string $navigationIcon = 'heroicon-o-list-bullet';
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {
