@@ -17,7 +17,7 @@ return new class extends Migration
             $table->decimal('amount', 24, 6)->default(0);
             $table->string('reason', 150)->nullable();
             $table->unsignedBigInteger('invoice_id')->nullable();
-            $table->unsignedBigInteger('user_id'); /* // Utilisateur Laravel standard */
+            $table->unsignedBigInteger('user_id'); 
             $table->timestamps();
         
             $table->foreign('invoice_id')->references('id')->on('invoices');
