@@ -9,6 +9,17 @@ use App\Models\Inventory;
 class InvoiceObserver
 {
     /**
+     * Lorsqu'on cree une facture
+     */
+    public function creating(Invoice $invoice)
+{
+    foreach ($invoice->items as $item) {
+        if ($item->product->quantity_in_stock < $item->quantity) {
+            throw new \Exception("Stock insuffisant pour {$item->product->name}");
+        }
+    }
+}
+    /**
      * Lorsqu'une facture est créée
      */
     public function created(Invoice $invoice)
