@@ -8,8 +8,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 
-class User extends Authenticatable
+class User extends Authenticatable  implements  HasAvatar
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
@@ -26,6 +28,11 @@ class User extends Authenticatable
         'profile_photo',
         'is_active',
     ];
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return asset('storage/' . $this->profile_photo);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
