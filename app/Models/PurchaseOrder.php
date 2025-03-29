@@ -55,40 +55,42 @@ protected $with = ['items'];
         ]);
     }
     protected static function booted()
-    {
-        static::created(function ($order) {
-            // Force le rechargement des relations
-            $order->load('items.product');
-        });
-    }
-/* 
-    protected static function booted()
-    {
-        static::created(function ($purchaseOrder) {
-            foreach ($purchaseOrder->items as $item) {
-                $product = $item->product;
-                $product->updateStock(
-                    $item->quantity,
-                    'add',
-                    "Réception de commande fournisseur #{$purchaseOrder->id}"
-                );
-                $product->checkStockAlert();
-            }
-        });
+{
+    static::created(function ($order) {
+        $order->load('items.product');
 
-        static::updated(function ($purchaseOrder) {
-            // Gérer les modifications si nécessaire
-        });
+        dd($order->items);
+        
+        foreach ($order->items as $item) {
+            $item->product->updateStock(
+                $item->quantity,
+                'add',
+                "Réception commande #{$order->id}",
+                'purchase_order',
+                $order->id
+            );
+        }
+        
+        if ($order->amount_payable > 0) {
+            $order->createDebt();
+        }
+    });
 
-        static::deleted(function ($purchaseOrder) {
-            foreach ($purchaseOrder->items as $item) {
-                $product = $item->product;
-                $product->updateStock(
-                    $item->quantity,
-                    'subtract',
-                    "Annulation commande fournisseur #{$purchaseOrder->id}"
-                );
-            }
-        });
-    } */
+    static::updated(function ($order) {
+        // Gestion des modifications si nécessaire
+    });
+
+    static::deleting(function ($order) {
+        foreach ($order->items as $item) {
+            $item->product->updateStock(
+                $item->quantity,
+                'subtract',
+                "Annulation commande #{$order->id}",
+                'purchase_order',
+                $order->id
+            );
+        }
+    });
+}
+
 }

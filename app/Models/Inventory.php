@@ -14,9 +14,18 @@ class Inventory extends Model
         'initial_stock',
         'final_stock',
         'notes',
+        'reference_type', // 'invoice', 'purchase_order', 'adjustment'
+    'reference_id',
     ];
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
+
+    public function reference()
+{
+    return $this->morphTo('reference', 'reference_type', 'reference_id');
+}
+
+    
 }

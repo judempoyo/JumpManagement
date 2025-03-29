@@ -68,32 +68,37 @@ public function createReceivable()
     ]);
 }
 protected static function booted()
-    {
-        static::saved(function ($invoice) {
-            foreach ($invoice->items as $item) {
-                $product = $item->product;
-                $product->updateStock(
-                    $item->quantity,
-                    'subtract',
-                    "Vente facture #{$invoice->id}"
-                );
-                $product->checkStockAlert();
-            }
-        });
+{
+    static::created(function ($invoice) {
+        foreach ($invoice->items as $item) {
+            $item->product->updateStock(
+                $item->quantity,
+                'subtract',
+                "Vente facture #{$invoice->id}",
+                'invoice',
+                $invoice->id
+            );
+        }
+        
+        if ($invoice->amount_payable > 0) {
+            $invoice->createReceivable();
+        }
+    });
 
-        static::updated(function ($invoice) {
-            // Gérer les modifications si nécessaire
-        });
+    static::updated(function ($invoice) {
+        // Gestion des modifications si nécessaire
+    });
 
-        static::deleted(function ($invoice) {
-            foreach ($invoice->items as $item) {
-                $product = $item->product;
-                $product->updateStock(
-                    $item->quantity,
-                    'add',
-                    "Annulation facture #{$invoice->id}"
-                );
-            }
-        });
-    }
+    static::deleting(function ($invoice) {
+        foreach ($invoice->items as $item) {
+            $item->product->updateStock(
+                $item->quantity,
+                'add',
+                "Annulation facture #{$invoice->id}",
+                'invoice',
+                $invoice->id
+            );
+        }
+    });
+}
 }
