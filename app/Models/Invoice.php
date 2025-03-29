@@ -55,7 +55,7 @@ class Invoice extends Model
 {
     return $this->morphMany(FinancialEntry::class, 'sourceDocument');
 }
-
+/* 
 public function createReceivable()
 {
     return $this->financialEntries()->create([
@@ -66,39 +66,5 @@ public function createReceivable()
         'partner_id' => $this->customer_id,
         'partner_type' => Customer::class,
     ]);
-}
-protected static function booted()
-{
-    static::created(function ($invoice) {
-        foreach ($invoice->items as $item) {
-            $item->product->updateStock(
-                $item->quantity,
-                'subtract',
-                "Vente facture #{$invoice->id}",
-                'invoice',
-                $invoice->id
-            );
-        }
-        
-        if ($invoice->amount_payable > 0) {
-            $invoice->createReceivable();
-        }
-    });
-
-    static::updated(function ($invoice) {
-        // Gestion des modifications si nécessaire
-    });
-
-    static::deleting(function ($invoice) {
-        foreach ($invoice->items as $item) {
-            $item->product->updateStock(
-                $item->quantity,
-                'add',
-                "Annulation facture #{$invoice->id}",
-                'invoice',
-                $invoice->id
-            );
-        }
-    });
-}
+} */
 }

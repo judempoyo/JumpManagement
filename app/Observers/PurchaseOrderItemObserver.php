@@ -39,7 +39,7 @@ public function deleted(PurchaseOrderItem $item)
         $product = Product::lockForUpdate()->find($item->product_id);
         
         $initialStock = $product->quantity_in_stock;
-        $product->decrement('quantity_in_stock', $item->quantity_received);
+        $product->decrement('quantity_in_stock', $item->quantity);
         
         Inventory::create([
             'date' => now(),
