@@ -6,52 +6,62 @@ use App\Models\PurchaseOrder;
 use App\Models\Product;
 use App\Models\Inventory;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderObserver
 {
-  
     /**
-     * Lorsqu'une commande est créée
+     * Handle the PurchaseOrder "created" event.
      */
     public function created(PurchaseOrder $purchaseOrder)
     {
-        //dd($purchaseOrder);
-
-        // Chargez explicitement les items si la relation n'est pas déjà chargée
-        if (!$purchaseOrder->relationLoaded('items')) {
-            $purchaseOrder->load('items.product');
-        }
-    
-        foreach ($purchaseOrder->items as $item) {
-            // Chargez explicitement le produit si nécessaire
-            if (!$item->relationLoaded('product')) {
-                $item->load('product');
+        // Utilisez une transaction globale pour toute l'opération
+        DB::transaction(function () use ($purchaseOrder) {
+            // Rechargez la commande avec ses relations fraîchement depuis la base
+            $freshOrder = PurchaseOrder::with('items.product')->find($purchaseOrder->id);
+            
+            if ($freshOrder->items->isEmpty()) {
+                Log::warning("Aucun article trouvé pour la commande #{$freshOrder->id} après rechargement", [
+                    'order_id' => $freshOrder->id,
+                    'items_in_db' => $freshOrder->items()->count()
+                ]);
+                return;
             }
     
-            $product = $item->product;
-            $initialStock = $product->quantity_in_stock;
-            
-            $product->quantity_in_stock += $item->quantity;
-            $product->save(); // Assurez-vous que save() est bien appelé
+            foreach ($freshOrder->items as $item) {
+                if (!$item->product) {
+                    Log::error("Produit manquant pour l'article #{$item->id}");
+                    continue;
+                }
     
-            \Log::info("Stock mis à jour pour produit {$product->id}", [
-                'ancien_stock' => $initialStock,
-                'quantite_ajoutee' => $item->quantity,
-                'nouveau_stock' => $product->quantity_in_stock
-            ]);
+                $product = $item->product;
+                $initialStock = $product->quantity_in_stock;
+                $newStock = $initialStock + $item->quantity;
     
-            Inventory::create([
-                'date' => now(),
-                'product_id' => $product->id,
-                'initial_stock' => $initialStock,
-                'final_stock' => $product->quantity_in_stock,
-                'notes' => 'Réception PO #' . $purchaseOrder->id,
-            ]);
-        }
+                // Mise à jour du stock
+                $product->quantity_in_stock = $newStock;
+                $product->save();
+    
+                // Historique d'inventaire
+                Inventory::create([
+                    'date' => now(),
+                    'product_id' => $product->id,
+                    'initial_stock' => $initialStock,
+                    'final_stock' => $newStock,
+                    'notes' => 'Réception PO #' . $freshOrder->id,
+                ]);
+    
+                Log::debug("Stock mis à jour - Produit: {$product->id}", [
+                    'ancien' => $initialStock,
+                    'ajout' => $item->quantity,
+                    'nouveau' => $newStock
+                ]);
+            }
+        });
     }
 
     /**
-     * Lorsqu'une commande est mise à jour
+     * Handle the PurchaseOrder "updated" event.
      */
     public function updated(PurchaseOrder $purchaseOrder)
     {
@@ -62,24 +72,42 @@ class PurchaseOrderObserver
     }
 
     /**
-     * Lorsqu'une commande est supprimée
+     * Handle the PurchaseOrder "deleted" event.
      */
     public function deleted(PurchaseOrder $purchaseOrder)
     {
-        // Diminuer les stocks si la commande est annulée
-        foreach ($purchaseOrder->items as $item) {
-            $product = $item->product;
-            $product->quantity_in_stock = max(0, $product->quantity_in_stock - $item->quantity);
-            $product->save();
+        // Chargez les items avant suppression
+        $purchaseOrder->load(['items.product']);
 
-            // Enregistrer dans l'historique des stocks
-            Inventory::create([
-                'date' => now(),
-                'product_id' => $product->id,
-                'initial_stock' => $product->quantity_in_stock + $item->quantity,
-                'final_stock' => $product->quantity_in_stock,
-                'notes' => 'Annulation de commande fournisseur #' . $purchaseOrder->id,
-            ]);
+        foreach ($purchaseOrder->items as $item) {
+            if (!$item->product) {
+                Log::error("Impossible d'annuler le stock - article sans produit", [
+                    'item_id' => $item->id,
+                    'purchase_order_id' => $purchaseOrder->id
+                ]);
+                continue;
+            }
+
+            $product = $item->product;
+            $newStock = max(0, $product->quantity_in_stock - $item->quantity);
+
+            \DB::transaction(function () use ($product, $item, $newStock, $purchaseOrder) {
+                $product->update(['quantity_in_stock' => $newStock]);
+
+                Inventory::create([
+                    'date' => now(),
+                    'product_id' => $product->id,
+                    'initial_stock' => $product->quantity_in_stock + $item->quantity,
+                    'final_stock' => $newStock,
+                    'notes' => 'Annulation de commande fournisseur #' . $purchaseOrder->id,
+                ]);
+
+                Log::info("Stock réduit après annulation de commande", [
+                    'product_id' => $product->id,
+                    'quantite_retiree' => $item->quantity,
+                    'nouveau_stock' => $newStock
+                ]);
+            });
         }
     }
 }

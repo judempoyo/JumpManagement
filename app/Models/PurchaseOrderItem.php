@@ -14,6 +14,9 @@ class PurchaseOrderItem extends Model
         'product_id',
     ];
 
+    protected $casts = [
+        'quantity' => 'integer'
+    ];
     public function purchaseOrder()
     {
         return $this->belongsTo(PurchaseOrder::class);

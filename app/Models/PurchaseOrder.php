@@ -19,6 +19,8 @@ class PurchaseOrder extends Model
         'notes',
     ];
 
+protected $with = ['items'];
+
     protected $casts = [
         'date' => 'datetime',
     ];
@@ -26,12 +28,12 @@ class PurchaseOrder extends Model
     {
         return $this->belongsTo(Supplier::class);
     }
-    
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function items()
 {
     return $this->hasMany(PurchaseOrderItem::class)->with('product');
@@ -40,7 +42,7 @@ class PurchaseOrder extends Model
     {
         return $this->morphMany(FinancialEntry::class, 'sourceDocument');
     }
-    
+
     public function createDebt()
     {
         return $this->financialEntries()->create([
@@ -52,7 +54,14 @@ class PurchaseOrder extends Model
             'partner_type' => Supplier::class,
         ]);
     }
-
+    protected static function booted()
+    {
+        static::created(function ($order) {
+            // Force le rechargement des relations
+            $order->load('items.product');
+        });
+    }
+/* 
     protected static function booted()
     {
         static::created(function ($purchaseOrder) {
@@ -81,5 +90,5 @@ class PurchaseOrder extends Model
                 );
             }
         });
-    }
+    } */
 }
