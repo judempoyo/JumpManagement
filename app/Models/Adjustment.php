@@ -6,8 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Adjustment extends Model
 {
-    protected $fillable = ['quantity', 'type', 'notes']; // type: 'add'/'remove'
-    
+    protected $fillable = [
+        'product_id',
+        'quantity',
+        'type', // 'add' ou 'remove'
+        'reason'
+    ];
+
     public function inventory()
     {
         return $this->morphOne(Inventory::class, 'reference');

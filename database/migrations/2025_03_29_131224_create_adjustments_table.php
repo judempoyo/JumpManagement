@@ -11,10 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('adjustments', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
-        });
+Schema::create('adjustments', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('product_id')->constrained()->onDelete('cascade');
+    $table->integer('quantity')->unsigned();
+    $table->string('type'); // add/remove
+    $table->text('reason');
+    $table->timestamps();
+});
     }
 
     /**
