@@ -17,8 +17,8 @@ class EditPurchaseOrder extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
-    protected function afterSave(): void
+   /*  protected function afterSave(): void
     {
         $this->record->refresh()->load('items.product');
-    }
+    } */
 }

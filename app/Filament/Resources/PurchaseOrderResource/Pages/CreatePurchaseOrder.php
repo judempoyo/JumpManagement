@@ -12,7 +12,7 @@ class CreatePurchaseOrder extends CreateRecord
 {
     protected static string $resource = PurchaseOrderResource::class;
 
-    protected function handleRecordCreation(array $data): PurchaseOrder
+    /* protected function handleRecordCreation(array $data): PurchaseOrder
 {
     return DB::transaction(function () use ($data) {
         $order = PurchaseOrder::create($data);
@@ -37,5 +37,5 @@ class CreatePurchaseOrder extends CreateRecord
             'items_count' => $this->record->items->count(),
             'items' => $this->record->items->toArray()
         ]);
-    }
+    } */
 }

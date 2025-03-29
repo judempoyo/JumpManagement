@@ -28,7 +28,7 @@ use Filament\Forms\Set;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Number;
-
+use App\Services\StockManager;
 
 
 class PurchaseOrderResource extends Resource
@@ -45,9 +45,9 @@ class PurchaseOrderResource extends Resource
 
     protected static ?int $navigationSort = 1;
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        return static::getModel()::count();
+    }
 
     public static function form(Form $form): Form
     {
@@ -102,33 +102,33 @@ class PurchaseOrderResource extends Resource
                             ->relationship()
                             ->schema([
                                 Select::make('product_id')
-                                ->label('Produit')
-                                ->options(function (Get $get) {
-                                    // Récupérer les produits déjà sélectionnés
-                                    $selectedProducts = collect($get('../../items'))
-                                        ->pluck('product_id')
-                                        ->filter()
-                                        ->toArray();
+                                    ->label('Produit')
+                                    ->options(function (Get $get) {
+                                        // Récupérer les produits déjà sélectionnés
+                                        $selectedProducts = collect($get('../../items'))
+                                            ->pluck('product_id')
+                                            ->filter()
+                                            ->toArray();
 
-                                    // Exclure les produits déjà sélectionnés
-                                    return Product::query()
-                                        ->whereNotIn('id', $selectedProducts)
-                                        ->pluck('name', 'id');
-                                })
-                                ->searchable()
-                                ->required()
-                                ->live()
-                                ->afterStateUpdated(function ($state, Set $set) {
-                                    $product = Product::find($state);
-                                    if ($product) {
-                                        $set('unit_price', $product->purchase_cost);
-                                    }
-                                }),
+                                        // Exclure les produits déjà sélectionnés
+                                        return Product::query()
+                                            ->whereNotIn('id', $selectedProducts)
+                                            ->pluck('name', 'id');
+                                    })
+                                    ->searchable()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Set $set) {
+                                        $product = Product::find($state);
+                                        if ($product) {
+                                            $set('unit_price', $product->purchase_cost);
+                                        }
+                                    }),
 
                                 TextInput::make('quantity')
                                     ->label('Quantité')
                                     ->numeric()
-                                    ->minValue(1) 
+                                    ->minValue(1)
                                     ->default(1)
                                     ->required()
                                     ->live()
@@ -153,7 +153,7 @@ class PurchaseOrderResource extends Resource
                                     ->numeric(),
                             ])
                             ->columns(4)
-                            ->itemLabel(fn (array $state): ?string => Product::find($state['product_id'])?->name ?? null)
+                            ->itemLabel(fn(array $state): ?string => Product::find($state['product_id'])?->name ?? null)
                             ->addActionLabel('Ajouter un article')
                             ->minItems(1)
                             ->reorderable()
@@ -189,7 +189,37 @@ class PurchaseOrderResource extends Resource
     }
 
 
+    // Dans PurchaseOrderResource.php
+    public static function afterCreate(PurchaseOrder $order): void
+    {
+        dd($order->items);
+        foreach ($order->items as $item) {
+            $item->product->updateStock(
+                $item->quantity,
+                'add',
+                "Réception commande #{$order->id}",
+                'purchase_order',
+                $order->id
+            );
+        }
 
+        if ($order->amount_payable > 0) {
+            $order->createDebt();
+        }
+    }
+
+    public static function afterDelete(PurchaseOrder $order): void
+    {
+        foreach ($order->items as $item) {
+            $item->product->updateStock(
+                $item->quantity,
+                'subtract',
+                "Annulation commande #{$order->id}",
+                'purchase_order',
+                $order->id
+            );
+        }
+    }
     protected static function updateItemSubtotal(Get $get, Set $set): void
     {
         $quantity = $get('quantity');
@@ -244,16 +274,16 @@ class PurchaseOrderResource extends Resource
                     ->relationship('supplier', 'name'),
 
                 Tables\Filters\Filter::make('paid')
-                    ->query(fn (Builder $query): Builder => $query->where('paid', true))
+                    ->query(fn(Builder $query): Builder => $query->where('paid', true))
                     ->label('Payés uniquement'),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
-               Tables\Actions\Action::make('pdf')
+                Tables\Actions\Action::make('pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->url(fn (PurchaseOrder $record) => route('purchase-orders.pdf', $record))
+                    ->url(fn(PurchaseOrder $record) => route('purchase-orders.pdf', $record))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
