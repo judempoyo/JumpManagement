@@ -24,7 +24,7 @@ class AdjustmentResource extends Resource
 
     protected static ?string $navigationGroup = 'Gestion des stocks';
 
-    protected static ?int $navigationGroupSort = 2;
+
 
     public static function form(Form $form): Form
     {

@@ -44,7 +44,6 @@ class PurchaseOrderResource extends Resource
     protected static ?string $navigationGroup = 'Achats';
 
     protected static ?int $navigationSort = 1;
-    protected static ?int $navigationGroupSort = 1;
 
     public static function getNavigationBadge(): ?string
     {
