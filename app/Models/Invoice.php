@@ -69,7 +69,7 @@ public function createReceivable()
 }
 protected static function booted()
     {
-        static::created(function ($invoice) {
+        static::saved(function ($invoice) {
             foreach ($invoice->items as $item) {
                 $product = $item->product;
                 $product->updateStock(
