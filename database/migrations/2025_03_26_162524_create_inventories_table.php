@@ -18,7 +18,11 @@ return new class extends Migration
             $table->integer('initial_stock')->default(0);
             $table->integer('final_stock')->default(0);
             $table->text('notes')->nullable();
-            $table->timestamps();
+            $table->string('reference_type')->nullable(); // 'App\Models\Invoice', 'App\Models\PurchaseOrder', etc.
+    $table->unsignedBigInteger('reference_id')->nullable(); // ID de la facture/commande
+    $table->timestamps();
+    
+    $table->index(['reference_type', 'reference_id']);
         });
     }
 

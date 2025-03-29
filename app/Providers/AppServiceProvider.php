@@ -3,10 +3,11 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Models\Invoice;
-use App\Observers\InvoiceObserver;
-use App\Models\PurchaseOrder;
-use App\Observers\PurchaseOrderObserver;
+use App\Models\InvoiceItem;
+use App\Observers\InvoiceItemObserver;
+use App\Models\PurchaseOrderItem;
+use App\Observers\PurchaseOrderItemObserver;
+use App\Services\StockManager;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +16,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+       /*  $this->app->singleton(StockManager::class, function ($app) {
+            return new StockManager();
+        }); */
     }
 
     /**
@@ -23,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Invoice::observe(InvoiceObserver::class);
-        PurchaseOrder::observe(PurchaseOrderObserver::class);
+        InvoiceItem::observe(InvoiceItemObserver::class);
+        PurchaseOrderItem::observe(PurchaseOrderItemObserver::class);
     }
 }

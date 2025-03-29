@@ -19,6 +19,8 @@ class PurchaseOrder extends Model
         'notes',
     ];
 
+protected $with = ['items'];
+
     protected $casts = [
         'date' => 'datetime',
     ];
@@ -26,12 +28,12 @@ class PurchaseOrder extends Model
     {
         return $this->belongsTo(Supplier::class);
     }
-    
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function items()
 {
     return $this->hasMany(PurchaseOrderItem::class)->with('product');
@@ -40,8 +42,8 @@ class PurchaseOrder extends Model
     {
         return $this->morphMany(FinancialEntry::class, 'sourceDocument');
     }
-    
-    public function createDebt()
+
+   /*  public function createDebt()
     {
         return $this->financialEntries()->create([
             'type' => 'debt',
@@ -51,35 +53,6 @@ class PurchaseOrder extends Model
             'partner_id' => $this->supplier_id,
             'partner_type' => Supplier::class,
         ]);
-    }
-
-    protected static function booted()
-    {
-        static::created(function ($purchaseOrder) {
-            foreach ($purchaseOrder->items as $item) {
-                $product = $item->product;
-                $product->updateStock(
-                    $item->quantity,
-                    'add',
-                    "Réception de commande fournisseur #{$purchaseOrder->id}"
-                );
-                $product->checkStockAlert();
-            }
-        });
-
-        static::updated(function ($purchaseOrder) {
-            // Gérer les modifications si nécessaire
-        });
-
-        static::deleted(function ($purchaseOrder) {
-            foreach ($purchaseOrder->items as $item) {
-                $product = $item->product;
-                $product->updateStock(
-                    $item->quantity,
-                    'subtract',
-                    "Annulation commande fournisseur #{$purchaseOrder->id}"
-                );
-            }
-        });
-    }
+    } */
+ 
 }
