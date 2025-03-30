@@ -21,4 +21,11 @@ class InventoryObserver
     }
     // Ne rien faire si c'est un Product
 }
+
+protected function clearProductCache($productId)
+{
+    Cache::forget("product_{$productId}_entries_sum");
+    Cache::forget("product_{$productId}_exits_sum");
+    Cache::forget("product_{$productId}_last_movement");
+}
 }
