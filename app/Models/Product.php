@@ -57,19 +57,11 @@ class Product extends Model
         return $this->hasMany(Adjustment::class);
     }
 
-    /*    public function updateStock($quantity, $operation = 'add', $notes = '', $referenceType = null, $referenceId = null)
-   {
-       return \App\Services\StockManager::updateStock(
-           $this, 
-           $quantity, 
-           $operation, 
-           $notes,
-           $referenceType,
-           $referenceId
-       );
-   } */
-
-    public function recalculateStock()
+    public function lastInventory()
+{
+    return $this->hasOne(Inventory::class)->latestOfMany();
+}
+   /*  public function recalculateStock()
     {
         $this->quantity_in_stock = $this->inventories()
             ->latest('date')
@@ -91,7 +83,7 @@ class Product extends Model
     public function getCurrentStockValue()
     {
         return $this->quantity_in_stock * $this->cost_price;
-    }
+    } */
 
     public function checkStockAlert()
     {

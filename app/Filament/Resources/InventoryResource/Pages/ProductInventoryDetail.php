@@ -6,6 +6,7 @@ use App\Filament\Resources\InventoryResource;
 
 use Filament\Resources\Pages\Page;
 use App\Models\Product;
+use App\Models\Inventory;
 use Filament\Tables;
 use Illuminate\Support\Facades\Cache;
 use Filament\Tables\Table;
@@ -35,7 +36,19 @@ class ProductInventoryDetail extends Page implements HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(Product::query()->with(['category']))
+            ->query(
+                Product::query()
+                    ->with(['category'])
+                    ->withSum([
+                        'inventories as total_entries' => function ($query) {
+                            $query->where('movement_type', 'entry');
+                        },
+                        'inventories as total_exits' => function ($query) {
+                            $query->where('movement_type', 'exit');
+                        }
+                    ], 'quantity')
+                    ->with(['lastInventory'])
+            )
             ->columns([
                 TextColumn::make('code')
                     ->label('Code')
@@ -71,34 +84,30 @@ class ProductInventoryDetail extends Page implements HasTable
                     ->numeric()
                     ->sortable()
                     ->color('success')
-                    ->getStateUsing(function (Product $record) {
-                        return Cache::remember(
-                            "product_{$record->id}_entries_sum",
-                            now()->addHours(6),
-                            fn() => $record->inventories()->entries()->sum('quantity')
-                        );
-                    }),
+                    ->formatStateUsing(fn (Product $record) => Cache::remember(
+                        "product_{$record->id}_entries_sum",
+                        now()->addHours(6),
+                        fn() => $record->total_entries ?: 0
+                    )),
                     
                 TextColumn::make('total_exits')
                     ->label('Sorties')
                     ->numeric()
                     ->sortable()
                     ->color('danger')
-                    ->getStateUsing(function (Product $record) {
-                        return Cache::remember(
-                            "product_{$record->id}_exits_sum",
-                            now()->addHours(6),
-                            fn() => $record->inventories()->exits()->sum('quantity')
-                        );
-                    }),
+                    ->formatStateUsing(fn (Product $record) => Cache::remember(
+                        "product_{$record->id}_exits_sum",
+                        now()->addHours(6),
+                        fn() => $record->total_exits ?: 0
+                    )),
                     
-                TextColumn::make('last_movement')
+                TextColumn::make('lastInventory.date')
                     ->label('Dernier Mouvement')
-                    ->formatStateUsing(function (Product $record) {
+                    ->formatStateUsing(function ($state, Product $record) {
                         $lastMovement = Cache::remember(
                             "product_{$record->id}_last_movement",
                             now()->addHours(1),
-                            fn() => $record->inventories()->latest()->first()
+                            fn() => $record->lastInventory
                         );
                         
                         if (!$lastMovement) return 'Aucun';
@@ -115,7 +124,16 @@ class ProductInventoryDetail extends Page implements HasTable
                     ->color(fn (Product $record) => 
                         Cache::get("product_{$record->id}_last_movement")?->movement_type === 'entry' 
                             ? 'success' 
-                            : 'danger'),
+                            : 'danger')
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->orderBy(
+                            Inventory::select('date')
+                                ->whereColumn('product_id', 'products.id')
+                                ->latest()
+                                ->limit(1),
+                            $direction
+                        );
+                    }),
             ])
             ->filters([
                 // Vos filtres ici
@@ -127,7 +145,7 @@ class ProductInventoryDetail extends Page implements HasTable
                             'tableFilters' => [
                                 'product' => ['value' => $record->id],
                                 'date_range' => [
-                                    'from' => now()->subMonth()->format('Y-m-d'),
+                                    'from' => now()->subYear()->format('Y-m-d'),
                                     'to' => now()->format('Y-m-d')
                                 ]
                             ]
@@ -148,7 +166,7 @@ class ProductInventoryDetail extends Page implements HasTable
             ->persistFiltersInSession()
             ->persistSearchInSession();
     }
-    
+
     public function getDefaultTableSortColumn(): ?string
     {
         return 'name';
