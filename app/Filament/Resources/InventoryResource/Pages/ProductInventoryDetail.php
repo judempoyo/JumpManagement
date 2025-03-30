@@ -6,6 +6,7 @@ use App\Filament\Resources\InventoryResource;
 
 use Filament\Resources\Pages\Page;
 use App\Models\Product;
+use App\Models\Inventory;
 use Filament\Tables;
 use Illuminate\Support\Facades\Cache;
 use Filament\Tables\Table;
