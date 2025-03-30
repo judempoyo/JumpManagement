@@ -44,6 +44,7 @@ class PurchaseOrderResource extends Resource
     protected static ?string $navigationGroup = 'Achats';
 
     protected static ?int $navigationSort = 1;
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
@@ -189,37 +190,7 @@ class PurchaseOrderResource extends Resource
     }
 
 
-    // Dans PurchaseOrderResource.php
-    public static function afterCreate(PurchaseOrder $order): void
-    {
-        dd($order->items);
-        foreach ($order->items as $item) {
-            $item->product->updateStock(
-                $item->quantity,
-                'add',
-                "Réception commande #{$order->id}",
-                'purchase_order',
-                $order->id
-            );
-        }
-
-        if ($order->amount_payable > 0) {
-            $order->createDebt();
-        }
-    }
-
-    public static function afterDelete(PurchaseOrder $order): void
-    {
-        foreach ($order->items as $item) {
-            $item->product->updateStock(
-                $item->quantity,
-                'subtract',
-                "Annulation commande #{$order->id}",
-                'purchase_order',
-                $order->id
-            );
-        }
-    }
+   
     protected static function updateItemSubtotal(Get $get, Set $set): void
     {
         $quantity = $get('quantity');

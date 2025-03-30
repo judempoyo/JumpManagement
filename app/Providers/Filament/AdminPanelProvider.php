@@ -18,6 +18,9 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
+use Filament\Navigation\MenuItem;
+use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -28,6 +31,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->passwordReset()
+            //->emailVerification()
             ->colors([
                 'primary' => Color::Teal,
             ])
@@ -68,6 +73,27 @@ class AdminPanelProvider extends PanelProvider
                     'default' => 1,
                     'sm' => 2,
                 ]),
+                FilamentEditProfilePlugin::make()
+                ->slug('mon-profile')
+                ->setTitle('Mon profile')
+                ->setNavigationLabel('Mon profile')
+                ->setNavigationGroup('Profile')
+                ->setIcon('heroicon-o-user')
+                ->setSort(6)
+                ->shouldShowDeleteAccountForm(true)
+                ->shouldShowBrowserSessionsForm()
+                ->shouldShowAvatarForm()
+               
+            ])
+            ->userMenuItems([
+                'profile' => MenuItem::make()
+                    ->label(fn() => auth()->user()->name)
+                    ->url(fn (): string => EditProfilePage::getUrl())
+                    ->icon('heroicon-m-user-circle')
+                   
+                    ->visible(function (): bool {
+                        return auth()->check();
+                    }),
             ])
             ->authMiddleware([
                 Authenticate::class,

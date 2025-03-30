@@ -52,6 +52,11 @@ class Product extends Model
         return $this->hasMany(Inventory::class);
     }
 
+    public function adjustments()
+    {
+        return $this->hasMany(Adjustment::class);
+    }
+
     /*    public function updateStock($quantity, $operation = 'add', $notes = '', $referenceType = null, $referenceId = null)
    {
        return \App\Services\StockManager::updateStock(

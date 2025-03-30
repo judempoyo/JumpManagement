@@ -7,7 +7,8 @@ use App\Models\InvoiceItem;
 use App\Observers\InvoiceItemObserver;
 use App\Models\PurchaseOrderItem;
 use App\Observers\PurchaseOrderItemObserver;
-use App\Services\StockManager;
+use App\Observers\AdjustmentObserver;
+use App\Models\Adjustment;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -28,5 +29,6 @@ class AppServiceProvider extends ServiceProvider
     {
         InvoiceItem::observe(InvoiceItemObserver::class);
         PurchaseOrderItem::observe(PurchaseOrderItemObserver::class);
+        Adjustment::observe(AdjustmentObserver::class);
     }
 }
