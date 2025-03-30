@@ -21,6 +21,19 @@ class Inventory extends Model
         'stock_after',
     ];
 
+     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'date' => 'datetime',
+        ];
+    }
+
+
     public function product()
     {
         return $this->belongsTo(Product::class);
