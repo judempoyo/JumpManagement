@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
-use Storage;
+use Illuminate\Support\Facades\Storage;
 class User extends Authenticatable  implements  HasAvatar
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -31,7 +31,9 @@ class User extends Authenticatable  implements  HasAvatar
 
     public function getFilamentAvatarUrl(): ?string
     {
-        return $this->profile_photo ? Storage::url($this->profile_photo) : null ;
+        //return $this->profile_photo ? Storage::url($this->profile_photo) : null ;
+        $avatarColumn = config('filament-edit-profile.avatar_column', 'avatar_url');
+        return $this->$avatarColumn ? Storage::url("$this->$avatarColumn") : null;
     }
 
     /**
