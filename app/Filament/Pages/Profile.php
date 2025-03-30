@@ -89,7 +89,7 @@ class Profile extends Page
         
         $user->update($data);
         
-        $this->notify('success', 'Profil mis à jour avec succès');
+        //$this->notify('success', 'Profil mis à jour avec succès');
     }
 
     protected function getHeaderActions(): array
