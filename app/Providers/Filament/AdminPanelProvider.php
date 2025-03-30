@@ -74,6 +74,15 @@ class AdminPanelProvider extends PanelProvider
                     'sm' => 2,
                 ]),
                 FilamentEditProfilePlugin::make()
+                ->slug('mon-profile')
+                ->setTitle('Mon profile')
+                ->setNavigationLabel('Mon profile')
+                ->setNavigationGroup('Profile')
+                ->setIcon('heroicon-o-user')
+                ->setSort(6)
+                ->shouldShowDeleteAccountForm(true)
+                ->shouldShowBrowserSessionsForm()
+                ->shouldShowAvatarForm()
                
             ])
             ->userMenuItems([
@@ -81,9 +90,9 @@ class AdminPanelProvider extends PanelProvider
                     ->label(fn() => auth()->user()->name)
                     ->url(fn (): string => EditProfilePage::getUrl())
                     ->icon('heroicon-m-user-circle')
-                    //If you are using tenancy need to check with the visible method where ->company() is the relation between the user and tenancy model as you called
+                   
                     ->visible(function (): bool {
-                        return auth()->user()->is_active;
+                        return auth()->check();
                     }),
             ])
             ->authMiddleware([
