@@ -306,9 +306,10 @@ class InventoryResource extends Resource
     public static function getNavigationItems(): array
 {
     return [
-        NavigationItem::make('Détail par produit')
+        NavigationItem::make('Inventaires')
             ->url(static::getUrl('product-detail'))
             ->icon('heroicon-o-document-text')
+            ->group('Gestion des stocks')
             ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteBaseName().'.product-detail')),
     ];
 }

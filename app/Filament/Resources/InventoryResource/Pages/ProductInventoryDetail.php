@@ -30,7 +30,7 @@ class ProductInventoryDetail extends Page implements HasTable
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
     protected static ?string $navigationLabel = 'Détail Stock par Produit';
     protected static ?string $title = 'Analyse des Mouvements par Produit';
-    protected static ?string $navigationGroup = 'Rapports';
+    protected static ?string $navigationGroup = 'Gestion des stocks';
 
     public function table(Table $table): Table
     {
