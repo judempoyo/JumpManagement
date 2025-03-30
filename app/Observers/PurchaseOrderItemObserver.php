@@ -67,7 +67,7 @@ class PurchaseOrderItemObserver
         }
     }
 
-    public function deleted(PurchaseOrderItem $item)
+    public function deleting(PurchaseOrderItem $item)
     {
         DB::transaction(function () use ($item) {
             $product = Product::lockForUpdate()->find($item->product_id);
