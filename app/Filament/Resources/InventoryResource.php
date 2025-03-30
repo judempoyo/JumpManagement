@@ -23,6 +23,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
+use Filament\Navigation\NavigationItem;
 use Illuminate\Support\Carbon;
 
 class InventoryResource extends Resource
@@ -290,6 +291,7 @@ class InventoryResource extends Resource
             'index' => Pages\ListInventories::route('/'),
             'create' => Pages\CreateInventory::route('/create'),
             'edit' => Pages\EditInventory::route('/{record}/edit'),
+            'product-detail' => Pages\ProductInventoryDetail::route('/product-detail'),
         ];
     }
 
@@ -300,4 +302,14 @@ class InventoryResource extends Resource
             'quantity_in_stock' => $record->stock_after
         ]);
     }
+
+    public static function getNavigationItems(): array
+{
+    return [
+        NavigationItem::make('Détail par produit')
+            ->url(static::getUrl('product-detail'))
+            ->icon('heroicon-o-document-text')
+            ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteBaseName().'.product-detail')),
+    ];
+}
 }
