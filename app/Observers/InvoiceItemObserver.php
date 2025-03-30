@@ -75,6 +75,7 @@ class InvoiceItemObserver
 
     public function deleting(InvoiceItem $item)
     {
+        dd($item);
         DB::transaction(function () use ($item) {
             $product = Product::lockForUpdate()->find($item->product_id);
 
