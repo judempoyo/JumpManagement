@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\InventoryResource\Pages;
 use App\Filament\Resources\InventoryResource\RelationManagers;
 use App\Models\Inventory;
-
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -19,10 +18,12 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
+use Filament\Navigation\NavigationItem;
 use Illuminate\Support\Carbon;
 
 class InventoryResource extends Resource
@@ -38,10 +39,11 @@ class InventoryResource extends Resource
     protected static ?string $navigationGroup = 'Gestion des stocks';
 
     protected static ?int $navigationSort = 3;
+
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        return static::getModel()::count();
+    }
 
     public static function form(Form $form): Form
     {
@@ -54,7 +56,7 @@ class InventoryResource extends Resource
                             ->required()
                             ->default(now())
                             ->maxDate(now()),
-                            
+
                         Select::make('product_id')
                             ->label('Produit')
                             ->required()
@@ -65,47 +67,88 @@ class InventoryResource extends Resource
                             ->afterStateUpdated(function ($state, Forms\Set $set) {
                                 if ($state) {
                                     $product = Product::find($state);
-                                    $set('initial_stock', $product->quantity_in_stock);
+                                    $set('stock_before', $product->quantity_in_stock);
                                     $set('product_name', $product->name);
                                     $set('product_code', $product->code);
                                 }
                             }),
-                            
-                        TextInput::make('initial_stock')
-                            ->label('Stock initial')
+
+                        ToggleButtons::make('movement_type')
+                            ->label('Type de mouvement')
+                            ->required()
+                            ->options([
+                                'entry' => 'Entrée',
+                                'exit' => 'Sortie',
+                            ])
+                            ->colors([
+                                'entry' => 'success',
+                                'exit' => 'danger',
+                            ])
+                            ->inline(),
+
+                        TextInput::make('quantity')
+                            ->label('Quantité')
+                            ->required()
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->step(0.01),
+
+                        TextInput::make('stock_before')
+                            ->label('Stock avant')
                             ->required()
                             ->numeric()
                             ->minValue(0)
                             ->disabled()
                             ->dehydrated(),
-                            
-                        TextInput::make('final_stock')
-                            ->label('Stock final')
-                            ->required()
-                            ->numeric()
-                            ->minValue(0)
-                            ->live()
-                            ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set) {
-                                $initial = (float) $get('initial_stock');
-                                $final = (float) $get('final_stock');
-                                $difference = $final - $initial;
-                                $set('difference', $difference);
-                            }),
-                            
-                        TextInput::make('difference')
-                            ->label('Différence')
+
+                        TextInput::make('stock_after')
+                            ->label('Stock après')
                             ->numeric()
                             ->disabled()
-                            ->dehydrated(false),
-                    ])->columns(3),
-                
+                            ->dehydrated(false)
+                            ->live()
+                            ->afterStateHydrated(function (Forms\Set $set, Forms\Get $get) {
+                                $this->calculateStockAfter($set, $get);
+                            }),
+                    ])
+                    ->columns(3),
+
                 Section::make('Détails supplémentaires')
                     ->schema([
+                        Select::make('reference_type')
+                            ->label('Type de référence')
+                            ->options([
+                                'invoice' => 'Facture',
+                                'purchase_order' => 'Bon de commande',
+                                'adjustment' => 'Ajustement',
+                            ])
+                            ->searchable(),
+
+                        TextInput::make('reference_id')
+                            ->label('ID Référence')
+                            ->numeric(),
+
                         Textarea::make('notes')
                             ->label('Notes')
                             ->columnSpanFull(),
                     ]),
-            ]);
+            ])
+            ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
+                $this->calculateStockAfter($set, $get);
+            });
+    }
+
+    protected static function calculateStockAfter(Forms\Set $set, Forms\Get $get): void
+    {
+        $stockBefore = (float) $get('stock_before');
+        $quantity = (float) $get('quantity');
+        $movementType = $get('movement_type');
+
+        $stockAfter = $movementType === 'entry'
+            ? $stockBefore + $quantity
+            : $stockBefore - $quantity;
+
+        $set('stock_after', $stockAfter);
     }
 
     public static function table(Table $table): Table
@@ -116,46 +159,48 @@ class InventoryResource extends Resource
                     ->label('Date')
                     ->date()
                     ->sortable(),
-                    
+
                 TextColumn::make('product.name')
                     ->label('Produit')
                     ->searchable()
                     ->sortable(),
-                    
+
                 TextColumn::make('product.code')
                     ->label('Code')
                     ->searchable(),
-                    
-                TextColumn::make('initial_stock')
-                    ->label('Stock initial')
-                    ->sortable(),
-                    
-                TextColumn::make('final_stock')
-                    ->label('Stock final')
-                    ->sortable(),
-                    
-                TextColumn::make('difference')
-                    ->label('Différence')
-                    ->numeric()
-                    ->color(function ($record) {
-                        $diff = $record->final_stock - $record->initial_stock;
-                        return $diff > 0 ? 'success' : ($diff < 0 ? 'danger' : 'gray');
-                    })
-                    ->formatStateUsing(function ($record) {
-                        $diff = $record->final_stock - $record->initial_stock;
-                        return ($diff > 0 ? '+' : '') . $diff;
-                    }),
-                    
-                BadgeColumn::make('status')
-                    ->label('Statut')
+
+                BadgeColumn::make('movement_type')
+                    ->label('Type')
+                    ->formatStateUsing(fn (string $state): string => $state === 'entry' ? 'Entrée' : 'Sortie')
                     ->colors([
-                        'success' => 'correct',
-                        'danger' => 'discrepancy',
-                    ])
-                    ->formatStateUsing(function ($record) {
-                        return $record->final_stock == $record->initial_stock ? 'Correct' : 'Écart';
+                        'success' => 'entry',
+                        'danger' => 'exit',
+                    ]),
+
+                TextColumn::make('quantity')
+                    ->label('Quantité')
+                    ->numeric()
+                    ->sortable(),
+
+                TextColumn::make('stock_before')
+                    ->label('Stock avant')
+                    ->sortable(),
+
+                TextColumn::make('stock_after')
+                    ->label('Stock après')
+                    ->sortable(),
+
+                TextColumn::make('reference_type')
+                    ->label('Référence')
+                    ->formatStateUsing(function ($state) {
+                        return match($state) {
+                            'invoice' => 'Facture',
+                            'purchase_order' => 'Bon de commande',
+                            'adjustment' => 'Ajustement',
+                            default => $state,
+                        };
                     }),
-                    
+
                 TextColumn::make('notes')
                     ->label('Notes')
                     ->limit(30)
@@ -170,7 +215,14 @@ class InventoryResource extends Resource
                     ->label('Produit')
                     ->searchable()
                     ->preload(),
-                    
+
+                SelectFilter::make('movement_type')
+                    ->label('Type de mouvement')
+                    ->options([
+                        'entry' => 'Entrées',
+                        'exit' => 'Sorties',
+                    ]),
+
                 Filter::make('date_range')
                     ->label('Période')
                     ->form([
@@ -202,28 +254,24 @@ class InventoryResource extends Resource
                         }
                         return $indicators;
                     }),
-                    
-                Filter::make('discrepancies')
-                    ->label('Avec écarts seulement')
-                    ->query(fn (Builder $query): Builder => $query->whereColumn('final_stock', '!=', 'initial_stock'))
-                    ->toggle(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->after(function ($record) {
                         // Mettre à jour le stock du produit après modification
-                        if ($record->wasChanged('final_stock')) {
-                            $record->product->update([
-                                'quantity_in_stock' => $record->final_stock
-                            ]);
-                        }
+                        $record->product->update([
+                            'quantity_in_stock' => $record->stock_after
+                        ]);
                     }),
-                    
+
                 Tables\Actions\DeleteAction::make()
                     ->before(function ($record) {
                         // Réajuster le stock si l'inventaire est supprimé
-                        $diff = $record->final_stock - $record->initial_stock;
-                        $record->product->decrement('quantity_in_stock', $diff);
+                        $diff = $record->movement_type === 'entry'
+                            ? -$record->quantity
+                            : $record->quantity;
+
+                        $record->product->increment('quantity_in_stock', $diff);
                     }),
             ])
             ->bulkActions([
@@ -236,21 +284,33 @@ class InventoryResource extends Resource
             ])
             ->defaultSort('date', 'desc');
     }
-    
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListInventories::route('/'),
             'create' => Pages\CreateInventory::route('/create'),
             'edit' => Pages\EditInventory::route('/{record}/edit'),
+            'product-detail' => Pages\ProductInventoryDetail::route('/product-detail'),
         ];
     }
-    
+
     public static function afterCreate($record)
     {
         // Mettre à jour le stock du produit après création
         $record->product->update([
-            'quantity_in_stock' => $record->final_stock
+            'quantity_in_stock' => $record->stock_after
         ]);
     }
+
+    public static function getNavigationItems(): array
+{
+    return [
+        NavigationItem::make('Inventaires')
+            ->url(static::getUrl('product-detail'))
+            ->icon('heroicon-o-document-text')
+            ->group('Gestion des stocks')
+            ->isActiveWhen(fn (): bool => request()->routeIs(static::getRouteBaseName().'.product-detail')),
+    ];
+}
 }
