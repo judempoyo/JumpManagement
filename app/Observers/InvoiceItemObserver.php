@@ -73,7 +73,7 @@ class InvoiceItemObserver
         }
     }
 
-    public function deleted(InvoiceItem $item)
+    public function deleting(InvoiceItem $item)
     {
         DB::transaction(function () use ($item) {
             $product = Product::lockForUpdate()->find($item->product_id);
