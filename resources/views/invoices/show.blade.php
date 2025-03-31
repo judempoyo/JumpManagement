@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facture #{{ $invoice->id }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+@fluxAppearance 
 </head>
 <body class="bg-white text-gray-800 font-sans">
-    <div class="container mx-auto p-6">
+    <div class="container lg:max-w-1/3  mx-auto p-6">
         <!-- En-tête -->
         <div class="flex justify-between items-start border-b-2 border-gray-200 pb-6 mb-8">
             <div class="w-2/5">
@@ -44,19 +49,19 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix unitaire</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sous-total</th>
+                            <th class="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produit</th>
+                            <th class="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prix unitaire</th>
+                            <th class="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
+                            <th class="px-3 py-1 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sous-total</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($invoice->items as $item)
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ $item->product->name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ number_format($item->unit_price, 2, ',', ' ') }} $</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ $item->quantity }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">{{ number_format($item->subtotal, 2, ',', ' ') }} $</td>
+                            <td class="px-4 py-2 whitespace-nowrap">{{ $item->product->name }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap">{{ number_format($item->unit_price, 2, ',', ' ') }} $</td>
+                            <td class="px-4 py-2 whitespace-nowrap">{{ $item->quantity }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap">{{ number_format($item->subtotal, 2, ',', ' ') }} $</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -65,7 +70,7 @@
         </div>
 
         <!-- Totaux -->
-        <div class="ml-auto w-1/3">
+        <div class="ml-auto w-3/4">
             <div class="bg-gray-50 p-4 rounded-lg">
                 <table class="w-full">
                     <tr class="border-b border-gray-200">
