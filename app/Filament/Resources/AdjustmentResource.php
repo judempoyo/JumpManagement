@@ -13,6 +13,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 
 class AdjustmentResource extends Resource
@@ -42,17 +44,17 @@ class AdjustmentResource extends Resource
                             $set('current_stock', $product->quantity_in_stock);
                         }
                     }),
-                    
+
                 Forms\Components\TextInput::make('current_stock')
                     ->label('Stock actuel')
                     ->numeric()
                     ->readOnly()
                     ->default(function () {
-                        return request()->has('product_id') 
-                            ? \App\Models\Product::find(request('product_id'))->quantity_in_stock 
+                        return request()->has('product_id')
+                            ? \App\Models\Product::find(request('product_id'))->quantity_in_stock
                             : 0;
                     }),
-                    
+
                 Forms\Components\Radio::make('type')
                     ->options([
                         'add' => 'Ajout stock',
@@ -60,23 +62,23 @@ class AdjustmentResource extends Resource
                     ])
                     ->required()
                     ->inline(),
-                    
+
                 Forms\Components\TextInput::make('quantity')
                     ->label('Quantité')
                     ->numeric()
                     ->required()
                     ->minValue(1)
                     ->maxValue(function (Forms\Get $get) {
-                        return $get('type') === 'remove' 
-                            ? \App\Models\Product::find($get('product_id'))?->quantity_in_stock 
+                        return $get('type') === 'remove'
+                            ? \App\Models\Product::find($get('product_id'))?->quantity_in_stock
                             : null;
                     }),
-                    
+
                 Forms\Components\Textarea::make('reason')
                     ->label('Raison')
                     ->required()
                     ->columnSpanFull(),
-                    
+
                 Forms\Components\DatePicker::make('created_at')
                     ->label('Date')
                     ->default(now())
@@ -91,7 +93,7 @@ class AdjustmentResource extends Resource
                 Tables\Columns\TextColumn::make('product.name')
                     ->label('Produit')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -103,17 +105,23 @@ class AdjustmentResource extends Resource
                         'add' => 'success',
                         'remove' => 'danger',
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('quantity')
                     ->label('Quantité'),
-                    
+
                 Tables\Columns\TextColumn::make('reason')
                     ->label('Raison')
                     ->limit(30),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Date')
                     ->dateTime(),
+            ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
@@ -121,7 +129,7 @@ class AdjustmentResource extends Resource
                         'add' => 'Ajouts',
                         'remove' => 'Retraits',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('product_id')
                     ->relationship('product', 'name')
                     ->searchable(),

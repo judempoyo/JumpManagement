@@ -24,7 +24,7 @@ use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
 use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 
-    
+
 
 class ProductResource extends Resource
 {
@@ -55,20 +55,20 @@ class ProductResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->columnSpan(2),
-                        
+
                         Forms\Components\TextInput::make('code')
                             ->label('Code produit')
                             ->required()
                             ->maxLength(50)
                             ->unique(ignoreRecord: true),
-                        
+
                         Forms\Components\Select::make('category_id')
                             ->label('Catégorie')
                             ->required()
                             ->options(Category::all()->pluck('name', 'id'))
                             ->searchable()
                             ->preload(),
-                        
+
                         Forms\Components\Select::make('unit_id')
                             ->label('Unité')
                             ->required()
@@ -76,7 +76,7 @@ class ProductResource extends Resource
                             ->searchable()
                             ->preload(),
                     ])->columns(3),
-                
+
                 Section::make('Prix et stock')
                     ->schema([
                         Forms\Components\TextInput::make('selling_price')
@@ -84,30 +84,30 @@ class ProductResource extends Resource
                             ->required()
                             ->numeric()
                             ->prefix('$'),
-                        
+
                         Forms\Components\TextInput::make('purchase_cost')
                             ->label('Coût d\'achat')
                             ->required()
                             ->numeric()
                             ->prefix('$'),
-                        
+
                         Forms\Components\TextInput::make('cost_price')
                             ->label('Prix de revient')
                             ->numeric()
                             ->prefix('$'),
-                        
+
                         Forms\Components\TextInput::make('quantity_in_stock')
                             ->label('Quantité en stock')
                             ->required()
                             ->numeric()
                             ->default(0),
-                        
+
                         Forms\Components\TextInput::make('alert_quantity')
                             ->label('Seuil d\'alerte')
                             ->numeric()
                             ->default(0),
                     ])->columns(3),
-                
+
                 Section::make('Image et description')
                     ->schema([
                         Forms\Components\FileUpload::make('image')
@@ -115,7 +115,7 @@ class ProductResource extends Resource
                             ->image()
                             ->directory('products')
                             ->columnSpan(1),
-                        
+
                             Forms\Components\MarkdownEditor::make('description')
                             ->label('Description')
                             ->columnSpan(2),
@@ -130,32 +130,32 @@ class ProductResource extends Resource
                 Tables\Columns\ImageColumn::make('image')
                     ->label('Image')
                     ->circular(),
-                
+
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nom')
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('code')
                     ->label('Code')
                     ->searchable()
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Catégorie')
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('quantity_in_stock')
                     ->label('Stock')
                     ->sortable()
                     ->color(fn (Product $record) => $record->quantity_in_stock <= $record->alert_quantity ? 'danger' : 'success')
                     ->description(fn (Product $record) => $record->quantity_in_stock <= $record->alert_quantity ? 'Stock faible' : null),
-                
+
                 Tables\Columns\TextColumn::make('selling_price')
                     ->label('Prix de vente')
                     ->money('USD')
                     ->sortable(),
-                
+
                 Tables\Columns\TextColumn::make('purchase_cost')
                     ->label('Coût d\'achat')
                     ->money('USD')
@@ -165,11 +165,11 @@ class ProductResource extends Resource
                 Tables\Filters\SelectFilter::make('category')
                     ->relationship('category', 'name')
                     ->label('Catégorie'),
-                
+
                 Tables\Filters\SelectFilter::make('unit')
                     ->relationship('unit', 'name')
                     ->label('Unité'),
-                
+
                 Tables\Filters\Filter::make('low_stock')
                     ->label('Stock faible')
                     ->query(fn (Builder $query): Builder => $query->whereColumn('quantity_in_stock', '<=', 'alert_quantity')),
@@ -183,14 +183,14 @@ class ProductResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-                
+
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                     ExportBulkAction::make()
                 ]),
-            ]) 
+            ])
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),
             ]);

@@ -31,6 +31,8 @@ use Illuminate\Support\Number;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 
 
@@ -193,7 +195,7 @@ class PurchaseOrderResource extends Resource
     }
 
 
-   
+
     protected static function updateItemSubtotal(Get $get, Set $set): void
     {
         $quantity = $get('quantity');
@@ -243,6 +245,12 @@ class PurchaseOrderResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
+            ])
             ->filters([
                 Tables\Filters\SelectFilter::make('supplier')
                     ->relationship('supplier', 'name'),
@@ -273,7 +281,7 @@ class PurchaseOrderResource extends Resource
     DB::transaction(function () use ($record) {
         // 1. Supprime chaque item (déclenche PurchaseOrderItemObserver::deleted())
         $record->items->each->delete();
-        
+
         // 2. Supprime le bon de commande
         $record->delete();
     });
