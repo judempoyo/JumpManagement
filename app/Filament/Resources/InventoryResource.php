@@ -25,6 +25,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Navigation\NavigationItem;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
 
 class InventoryResource extends Resource
 {
@@ -295,6 +297,16 @@ class InventoryResource extends Resource
         ];
     }
 
+    public static function delete(Model $record): void
+{
+    DB::transaction(function () use ($record) {
+        // 1. Supprime chaque item (déclenche InvoiceItemObserver::deleted())
+        $record->items->each->delete();
+        
+        // 2. Supprime la facture
+        $record->delete();
+    });
+}
     public static function afterCreate($record)
     {
         // Mettre à jour le stock du produit après création

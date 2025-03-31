@@ -28,7 +28,9 @@ use Filament\Forms\Set;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Number;
-use App\Services\StockManager;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Model;
+
 
 
 class PurchaseOrderResource extends Resource
@@ -264,6 +266,16 @@ class PurchaseOrderResource extends Resource
             ]);
     }
 
+    public static function delete(Model $record): void
+{
+    DB::transaction(function () use ($record) {
+        // 1. Supprime chaque item (déclenche PurchaseOrderItemObserver::deleted())
+        $record->items->each->delete();
+        
+        // 2. Supprime le bon de commande
+        $record->delete();
+    });
+}
     public static function getRelations(): array
     {
         return [
