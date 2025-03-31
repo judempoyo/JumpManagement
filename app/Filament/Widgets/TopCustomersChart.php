@@ -1,4 +1,5 @@
 <?php
+namespace App\Filament\Widgets;
 
 use Filament\Widgets\BarChartWidget;
 use App\Models\Customer;

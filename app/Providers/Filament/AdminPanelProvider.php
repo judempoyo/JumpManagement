@@ -22,9 +22,8 @@ use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
 use Filament\Navigation\MenuItem;
 use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 
-use App\Filament\Widgets\SalesOverviewWidget;
+use App\Filament\Widgets\StatsOverviewWidget;
 use App\Filament\Widgets\MonthlySalesChart;
-use App\Filament\Widgets\RecentTransactionsTable;
 use App\Filament\Widgets\TopCustomersChart;
 use App\Filament\Widgets\LowStockProductsTable;
 
@@ -48,11 +47,17 @@ class AdminPanelProvider extends PanelProvider
                 Pages\Dashboard::class,
             ])
             ->widgets([
-              
+                Widgets\AccountWidget::class,
+                StatsOverviewWidget::class,
+                //MonthlySalesChart::class,
+                //RecentTransactionsTable::class,
+                TopCustomersChart::class,
+                LowStockProductsTable::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
+                
             ])
             ->middleware([
                 EncryptCookies::class,
