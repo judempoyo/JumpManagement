@@ -4,24 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facture #{{ $invoice->id }}</title>
-    
+
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
-@fluxAppearance 
+@fluxAppearance
 </head>
 <body class="bg-white text-gray-800 font-sans">
     <div class="container lg:max-w-1/3  mx-auto p-6">
         <!-- En-tête -->
-        <div class="flex justify-between items-start border-b-2 border-gray-200 pb-6 mb-8">
+        <div class="flex justify-between items-start border-b-2 border-gray-200 pb-4 mb-4">
             <div class="w-2/5">
                 <h1 class="text-2xl font-bold text-gray-800">{{ config('app.name') }}</h1>
                 <p class="text-gray-600">Adresse de l'entreprise</p>
                 <p class="text-gray-600">Téléphone: {{ config('app.phone') }}</p>
                 <p class="text-gray-600">Email: {{ config('app.email') }}</p>
             </div>
-            
+
             <div class="w-2/5 text-right">
                 <h2 class="text-3xl font-bold text-blue-600">FACTURE</h2>
                 <div class="mt-2 space-y-1">
@@ -33,7 +33,7 @@
         </div>
 
         <!-- Client -->
-<div class="bg-gray-50 p-4 rounded-lg mb-8">
+<div class="bg-gray-50 p-4 rounded-lg mb-4">
     <h3 class="text-lg font-semibold text-gray-800 mb-2">Client:</h3>
     <p class="font-bold">{{ $invoice->customer->name }}</p>
     @if($invoice->customer_id)
@@ -43,8 +43,8 @@
     @endif
 </div>
         <!-- Articles -->
-        <div class="mb-8">
-            <h3 class="text-lg font-semibold mb-4">Articles</h3>
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold mb-2">Articles</h3>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -102,14 +102,14 @@
 
         <!-- Notes -->
         @if($invoice->notes)
-        <div class="mt-8 bg-gray-50 p-4 rounded-lg">
+        <div class="mt-4 bg-gray-50 p-4 rounded-lg">
             <h3 class="text-lg font-semibold text-gray-800 mb-2">Notes:</h3>
             <p class="text-gray-600">{{ $invoice->notes }}</p>
         </div>
         @endif
 
         <!-- Pied de page -->
-        <div class="mt-12 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+        <div class="mt-8 pt-4 border-t border-gray-200 text-center text-gray-500 text-sm">
             <p>Merci pour votre confiance!</p>
             <p class="mt-1">{{ config('app.name') }} - {{ date('Y') }}</p>
         </div>

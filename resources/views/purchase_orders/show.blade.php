@@ -17,7 +17,7 @@
 <body class="bg-white text-gray-800 font-sans">
     <div class="container lg:max-w-1/3  mx-auto p-6">
         <!-- En-tête -->
-        <div class="flex justify-between items-start border-b-2 border-gray-200 pb-6 mb-8">
+        <div class="flex justify-between items-start border-b-2 border-gray-200 pb-4 mb-4">
             <div class="w-2/5">
                 <h1 class="text-2xl font-bold text-gray-800">{{ config('app.name') }}</h1>
                 <p class="text-gray-600">Adresse de l'entreprise</p>
@@ -36,7 +36,7 @@
         </div>
 
         <!-- Fournisseur -->
-        <div class="bg-gray-50 p-4 rounded-lg mb-8">
+        <div class="bg-gray-50 p-4 rounded-lg mb-4">
             <h3 class="text-lg font-semibold text-gray-800 mb-2">Fournisseur:</h3>
             <p class="font-bold">{{ $purchaseOrder->supplier->name }}</p>
             <p class="text-gray-600">{{ $purchaseOrder->supplier->address }}</p>
@@ -45,8 +45,8 @@
         </div>
 
         <!-- Articles -->
-        <div class="mb-8">
-            <h3 class="text-lg font-semibold mb-4">Articles commandés</h3>
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold mb-2">Articles commandés</h3>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -101,14 +101,14 @@
 
         <!-- Notes -->
         @if($purchaseOrder->notes)
-        <div class="mt-8 bg-gray-50 p-4 rounded-lg">
+        <div class="mt-4 bg-gray-50 p-4 rounded-lg">
             <h3 class="text-lg font-semibold text-gray-800 mb-2">Notes:</h3>
             <p class="text-gray-600">{{ $purchaseOrder->notes }}</p>
         </div>
         @endif
 
         <!-- Pied de page -->
-        <div class="mt-12 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+        <div class="mt-8 pt-4 border-t border-gray-200 text-center text-gray-500 text-sm">
             <p>Merci pour votre confiance!</p>
             <p class="mt-1">{{ config('app.name') }} - {{ date('Y') }}</p>
         </div>
