@@ -1,21 +1,33 @@
 <?php
 
-namespace App\Filament\Widgets;
+use Filament\Widgets\TableWidget;
+use Illuminate\Database\Eloquent\Builder;
+use App\Models\Inventory;
 
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Widgets\TableWidget as BaseWidget;
 
-class RecentTransactionsTable extends BaseWidget
+class RecentTransactionsTable extends TableWidget
 {
-    public function table(Table $table): Table
+    protected int | string | array $columnSpan = 'full';
+
+    protected function getTableQuery(): Builder
     {
-        return $table
-            ->query(
-                // ...
-            )
-            ->columns([
-                // ...
-            ]);
+        return Inventory::with('product')->latest()->limit(10);
+    }
+
+    protected function getTableColumns(): array
+    {
+        return [
+            Tables\Columns\TextColumn::make('date')
+                ->dateTime(),
+            Tables\Columns\TextColumn::make('product.name')
+                ->label('Produit'),
+            Tables\Columns\TextColumn::make('movement_type')
+                ->label('Type')
+                ->formatStateUsing(fn($state) => ucfirst($state)),
+            Tables\Columns\TextColumn::make('quantity')
+                ->label('Quantité'),
+            Tables\Columns\TextColumn::make('stock_after')
+                ->label('Stock Final'),
+        ];
     }
 }

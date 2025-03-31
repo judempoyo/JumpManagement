@@ -22,6 +22,12 @@ use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
 use Filament\Navigation\MenuItem;
 use Joaopaulolndev\FilamentEditProfile\Pages\EditProfilePage;
 
+use App\Filament\Widgets\SalesOverviewWidget;
+use App\Filament\Widgets\MonthlySalesChart;
+use App\Filament\Widgets\RecentTransactionsTable;
+use App\Filament\Widgets\TopCustomersChart;
+use App\Filament\Widgets\LowStockProductsTable;
+
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
@@ -40,6 +46,9 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Pages\Dashboard::class,
+            ])
+            ->widgets([
+              
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
