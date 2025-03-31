@@ -12,6 +12,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+
 
 class ExpenseResource extends Resource
 {
@@ -41,22 +45,22 @@ public static function getNavigationBadge(): ?string
                             ->required()
                             ->native(false)
                             ->default(now()),
-                            
+
                         Forms\Components\TextInput::make('amount')
                             ->required()
                             ->numeric()
                             ->prefix('$'),
-                            
+
                         Forms\Components\TextInput::make('reason')
                             ->required()
                             ->maxLength(150),
-                            
+
                         Forms\Components\Select::make('user_id')
                             ->relationship('user', 'name')
                             ->required()
                             ->searchable()
                             ->preload(),
-                            
+
                         Forms\Components\Select::make('invoice_id')
                             ->relationship('invoice', 'id')
                             ->searchable()
@@ -75,30 +79,36 @@ public static function getNavigationBadge(): ?string
                 Tables\Columns\TextColumn::make('date')
                     ->date()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('amount')
                     ->money('USD')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('reason')
                     ->searchable()
                     ->limit(30),
-                    
+
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Utilisateur')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('invoice.number')
                     ->label('Facture')
                     ->placeholder('Aucune')
                     ->sortable(),
+            ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('user')
                     ->relationship('user', 'name')
                     ->searchable()
                     ->preload(),
-                    
+
                 Tables\Filters\Filter::make('has_invoice')
                     ->label('Avec facture')
                     ->query(fn ($query) => $query->whereNotNull('invoice_id'))
@@ -111,6 +121,7 @@ public static function getNavigationBadge(): ?string
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ])
             ->emptyStateActions([

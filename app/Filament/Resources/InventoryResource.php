@@ -27,6 +27,9 @@ use Filament\Navigation\NavigationItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class InventoryResource extends Resource
 {
@@ -211,6 +214,12 @@ class InventoryResource extends Resource
                         return strlen($state) > 30 ? $state : null;
                     }),
             ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
+            ])
             ->filters([
                 SelectFilter::make('product')
                     ->relationship('product', 'name')
@@ -279,6 +288,7 @@ class InventoryResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ])
             ->emptyStateActions([
@@ -302,7 +312,7 @@ class InventoryResource extends Resource
     DB::transaction(function () use ($record) {
         // 1. Supprime chaque item (déclenche InvoiceItemObserver::deleted())
         $record->items->each->delete();
-        
+
         // 2. Supprime la facture
         $record->delete();
     });

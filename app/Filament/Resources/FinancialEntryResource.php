@@ -12,6 +12,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+
 
 class FinancialEntryResource extends Resource
 {
@@ -41,7 +45,7 @@ class FinancialEntryResource extends Resource
                                 'debt' => 'Dette',
                             ])
                             ->live(),
-                            
+
                         Forms\Components\Select::make('source_document_type')
                             ->label('Document source')
                             ->required()
@@ -49,12 +53,12 @@ class FinancialEntryResource extends Resource
                                 'App\Models\Invoice' => 'Facture',
                                 'App\Models\PurchaseOrder' => 'Bon de commande',
                             ]),
-                            
+
                         Forms\Components\Select::make('source_document_id')
                             ->label('Référence document')
                             ->searchable()
                             ->required(),
-                            
+
                         Forms\Components\Select::make('partner_type')
                             ->label('Type partenaire')
                             ->options([
@@ -62,13 +66,13 @@ class FinancialEntryResource extends Resource
                                 'App\Models\Supplier' => 'Fournisseur',
                             ])
                             ->required(),
-                            
+
                         Forms\Components\Select::make('partner_id')
                             ->label('Partenaire')
                             ->searchable()
                             ->required(),
                     ])->columns(2),
-                    
+
                 Forms\Components\Section::make('Montants et dates')
                     ->schema([
                         Forms\Components\TextInput::make('total_amount')
@@ -76,25 +80,25 @@ class FinancialEntryResource extends Resource
                             ->required()
                             ->numeric()
                             ->prefix('$'),
-                            
+
                         Forms\Components\TextInput::make('remaining_amount')
                             ->label('Montant restant')
                             ->required()
                             ->numeric()
                             ->prefix('$'),
-                            
+
                         Forms\Components\DatePicker::make('start_date')
                             ->label('Date de création')
                             ->required()
                             ->default(now()),
-                            
+
                         Forms\Components\DatePicker::make('due_date')
                             ->label('Date d\'échéance'),
-                            
+
                         Forms\Components\Toggle::make('is_paid')
                             ->label('Payé'),
                     ])->columns(3),
-                    
+
                 Forms\Components\Section::make('Notes')
                     ->schema([
                         Forms\Components\Textarea::make('notes')
@@ -121,31 +125,37 @@ class FinancialEntryResource extends Resource
                         'debt' => 'Dette',
                         default => $state,
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('sourceDocument.id')
                     ->label('Document')
                     ->formatStateUsing(fn ($state, $record) => $record->source_document_type::find($state)?->id),
-                    
+
                 Tables\Columns\TextColumn::make('partner.name')
                     ->label('Partenaire'),
-                    
+
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Montant total')
                     ->money('USD'),
-                    
+
                 Tables\Columns\TextColumn::make('remaining_amount')
                     ->label('Reste à payer')
                     ->money('USD')
                     ->color(fn ($record) => $record->remaining_amount > 0 ? 'danger' : 'success'),
-                    
+
                 Tables\Columns\IconColumn::make('is_paid')
                     ->label('Statut')
                     ->boolean(),
-                    
+
                 Tables\Columns\TextColumn::make('due_date')
                     ->label('Échéance')
                     ->date()
                     ->color(fn ($record) => $record->due_date && $record->due_date < now() ? 'danger' : null),
+            ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
@@ -154,15 +164,15 @@ class FinancialEntryResource extends Resource
                         'receivable' => 'Créance',
                         'debt' => 'Dette',
                     ]),
-                    
+
                 Tables\Filters\Filter::make('is_paid')
                     ->label('Payé seulement')
                     ->query(fn (Builder $query): Builder => $query->where('is_paid', true)),
-                    
+
                 Tables\Filters\Filter::make('unpaid')
                     ->label('Impayé seulement')
                     ->query(fn (Builder $query): Builder => $query->where('is_paid', false)),
-                    
+
                 Tables\Filters\Filter::make('overdue')
                     ->label('En retard')
                     ->query(fn (Builder $query): Builder => $query->where('due_date', '<', now())),
@@ -177,11 +187,11 @@ class FinancialEntryResource extends Resource
                             ->required()
                             ->numeric()
                             ->maxValue(fn ($record) => $record->remaining_amount),
-                            
+
                         Forms\Components\DatePicker::make('payment_date')
                             ->label('Date de paiement')
                             ->default(now()),
-                            
+
                         Forms\Components\Select::make('payment_method')
                             ->label('Méthode de paiement')
                             ->options([
@@ -190,10 +200,10 @@ class FinancialEntryResource extends Resource
                                 'transfer' => 'Virement',
                                 'card' => 'Carte bancaire',
                             ]),
-                            
+
                         Forms\Components\TextInput::make('reference')
                             ->label('Référence'),
-                            
+
                         Forms\Components\Textarea::make('notes')
                             ->label('Notes'),
                     ])
@@ -206,16 +216,17 @@ class FinancialEntryResource extends Resource
                             'notes' => $data['notes'],
                             'user_id' => auth()->id(),
                         ]);
-                        
+
                         $record->updateBalance();
                     }),
-                    
+
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ]);
     }

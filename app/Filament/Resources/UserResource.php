@@ -12,6 +12,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+
 
 class UserResource extends Resource
 {
@@ -60,7 +64,7 @@ class UserResource extends Resource
                 Tables\Columns\ImageColumn::make('profile_photo') // Ajoutez cette colonne
                 ->label('Photo de profil')
                 ->circular()
-                ->disk('public'), 
+                ->disk('public'),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
@@ -80,6 +84,12 @@ class UserResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
+            ])
             ->filters([
                 Tables\Filters\Filter::make('is_active')
                 ->label('Comptes actifs')
@@ -95,6 +105,7 @@ class UserResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ]);
     }

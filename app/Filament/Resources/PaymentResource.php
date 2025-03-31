@@ -12,6 +12,10 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+
 
 
 class PaymentResource extends Resource
@@ -40,19 +44,19 @@ class PaymentResource extends Resource
                             ->required()
                             ->searchable()
                             ->preload(),
-                            
+
                         Forms\Components\TextInput::make('amount')
                             ->label('Montant')
                             ->required()
                             ->numeric()
                             ->prefix('$'),
-                            
+
                         Forms\Components\DatePicker::make('payment_date')
                             ->label('Date de paiement')
                             ->required()
                             ->default(now()),
                     ])->columns(3),
-                    
+
                 Forms\Components\Section::make('Détails du paiement')
                     ->schema([
                         Forms\Components\Select::make('payment_method')
@@ -65,18 +69,18 @@ class PaymentResource extends Resource
                                 'card' => 'Carte bancaire',
                                 'other' => 'Autre',
                             ]),
-                            
+
                         Forms\Components\TextInput::make('reference')
                             ->label('Référence')
                             ->maxLength(255),
-                            
+
                         Forms\Components\Select::make('user_id')
                             ->label('Enregistré par')
                             ->relationship('user', 'name')
                             ->default(auth()->id())
                             ->required(),
                     ])->columns(3),
-                    
+
                 Forms\Components\Section::make('Notes')
                     ->schema([
                         Forms\Components\Textarea::make('notes')
@@ -93,17 +97,17 @@ class PaymentResource extends Resource
                 Tables\Columns\TextColumn::make('financialEntry.sourceDocument.id')
                     ->label('Document')
                     ->formatStateUsing(fn ($state, $record) => $record->financialEntry->source_document_type::find($record->financialEntry->source_document_id)?->id),
-                    
+
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Montant')
                     ->money('USD')
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('payment_date')
                     ->label('Date')
                     ->date()
                     ->sortable(),
-                    
+
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Méthode')
                     ->formatStateUsing(fn (string $state): string => match ($state) {
@@ -113,15 +117,21 @@ class PaymentResource extends Resource
                         'card' => 'Carte',
                         default => $state,
                     }),
-                    
+
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Enregistré par'),
-                    
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Créé le')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('payment_method')
@@ -132,11 +142,11 @@ class PaymentResource extends Resource
                         'transfer' => 'Virement',
                         'card' => 'Carte bancaire',
                     ]),
-                    
+
                 Tables\Filters\SelectFilter::make('user')
                     ->label('Enregistré par')
                     ->relationship('user', 'name'),
-                    
+
                 Tables\Filters\Filter::make('payment_date')
                     ->label('Date de paiement')
                     ->form([
@@ -164,6 +174,7 @@ class PaymentResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ]);
     }
