@@ -10,13 +10,13 @@ use App\Models\Invoice;
 
 Route::any('/',function(){
     return redirect ("/admin");
-});
+})->name('home');
 Route::get('/purchase-orders/{purchaseOrder}/pdf', function (PurchaseOrder $purchaseOrder) {
     return view('purchase_orders.show', compact('purchaseOrder'));
-})->name('purchase-orders.pdf');
+})->name('purchase-orders.pdf')->middleware(['auth', 'verified']);
 Route::get('/invoices/{invoice}/pdf', function (Invoice $invoice) {
     return view('invoices.show', compact('invoice'));
-})->name('invoices.pdf');
+})->name('invoices.pdf') ->middleware(['auth', 'verified']);
 /* 
 Route::get('/', function () {
     return view('welcome');
