@@ -19,6 +19,8 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
@@ -175,6 +177,7 @@ class ProductResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+                ExportBulkAction::make()
             ]) 
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),
