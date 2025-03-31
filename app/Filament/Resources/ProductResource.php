@@ -20,6 +20,11 @@ use Filament\Forms\Components\MarkdownEditor;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
+
+
+    
 
 class ProductResource extends Resource
 {
@@ -169,9 +174,16 @@ class ProductResource extends Resource
                     ->label('Stock faible')
                     ->query(fn (Builder $query): Builder => $query->whereColumn('quantity_in_stock', '<=', 'alert_quantity')),
             ])
+            ->headerActions([
+                ExportAction::make()->exports([
+                    ExcelExport::make()->fromTable()->except([
+                        'created_at', 'updated_at', 'deleted_at',
+                    ]),]),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
