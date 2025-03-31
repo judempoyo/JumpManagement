@@ -112,6 +112,7 @@ class AdminPanelProvider extends PanelProvider
 
             ])
             ->userMenuItems([
+               
                 'profile' => MenuItem::make()
                     ->label(fn() => auth()->user()->name)
                     ->url(fn(): string => EditProfilePage::getUrl())
@@ -121,6 +122,7 @@ class AdminPanelProvider extends PanelProvider
                         return auth()->check();
                     }),
             ])
+            //->topbar(true)
             ->authMiddleware([
                 Authenticate::class,
                 //'admin'
