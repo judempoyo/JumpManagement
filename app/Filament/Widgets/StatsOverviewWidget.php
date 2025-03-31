@@ -22,7 +22,7 @@ class StatsOverviewWidget extends BaseWidget
             Stat::make('Produits en stock', Product::count())
                 ->description('Total des produits disponibles')
                 ->descriptionIcon('heroicon-o-shopping-bag')
-                ->color('success')
+                ->color('primary')
                 ->chart([7, 2, 10, 3, 15, 4, 17])
                 ->url(route('filament.admin.resources.products.index')),
 
@@ -37,6 +37,11 @@ class StatsOverviewWidget extends BaseWidget
                         ],
                     ],
                 ])),
+            Stat::make('Famille de produits', Category::count())
+                ->description('total de categories')
+                ->descriptionIcon('heroicon-o-tag')
+                ->color('primary')
+                ->icon('heroicon-o-tag'),
 
             Stat::make('Ventes aujourd\'hui', Invoice::whereDate('date', today())->count())
                 ->description('Factures créées aujourd\'hui')
@@ -45,10 +50,10 @@ class StatsOverviewWidget extends BaseWidget
                 ->chart([7, 2, 10, 3, 15, 4, 17])
                 ->url(route('filament.admin.resources.invoices.index')),
 
-            Stat::make('Chiffre d\'affaires', number_format(Invoice::whereDate('date', today())->sum('total'), 0, ',', ' ') . ' FCFA')
+            Stat::make('Chiffre d\'affaires', number_format(Invoice::whereDate('date', today())->sum('total'), 0, ',', ' ') . ' CDF')
                 ->description('Total des ventes aujourd\'hui')
                 ->descriptionIcon('heroicon-o-currency-dollar')
-                ->color('success'),
+                ->color('primary'),
 
             Stat::make('Commandes fournisseurs', PurchaseOrder::where('status', '!=', 'delivered')->count())
                 ->description('Commandes en attente')
@@ -61,6 +66,23 @@ class StatsOverviewWidget extends BaseWidget
                 ->descriptionIcon('heroicon-o-users')
                 ->color('primary')
                 ->url(route('filament.admin.resources.customers.index')),
+            Stat::make('Fournisseurs enregistrés', Supplier::count())
+                ->description('Total des fournisseurs')
+                ->descriptionIcon('heroicon-o-users')
+                ->color('primary')
+                ->url(route('filament.admin.resources.customers.index')),
+            
+            
+            Stat::make('Utilisateurs enregistrés', User::count())
+                ->description('Nombre total d\'utilisateurs')
+                ->descriptionIcon('heroicon-s-users')
+                ->color('warning')
+                ->icon('heroicon-s-users'),
+            Stat::make('Utilisateurs enregistrés', User::count())
+                ->description('Nombre total d\'utilisateurs')
+                ->descriptionIcon('heroicon-s-users')
+                ->color('warning')
+                ->icon('heroicon-s-users'),
         ];
     }
 }

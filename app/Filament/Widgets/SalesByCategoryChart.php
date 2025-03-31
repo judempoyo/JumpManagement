@@ -40,6 +40,6 @@ class SalesByCategoryChart extends ChartWidget
 
     protected function getType(): string
     {
-        return 'bubble';
+        return 'pie';
     }
 }
