@@ -176,8 +176,8 @@ class ProductResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
-                ExportBulkAction::make()
             ]) 
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),

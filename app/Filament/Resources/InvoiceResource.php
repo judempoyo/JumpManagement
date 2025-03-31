@@ -28,6 +28,8 @@ use Filament\Forms\Set;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Number;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+
 
 
 class InvoiceResource extends Resource
@@ -294,6 +296,7 @@ class InvoiceResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ]);
     }

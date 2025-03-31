@@ -30,6 +30,7 @@ use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Support\Number;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 
 
@@ -262,6 +263,7 @@ class PurchaseOrderResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ]);
     }

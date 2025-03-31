@@ -27,6 +27,7 @@ use Filament\Navigation\NavigationItem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class InventoryResource extends Resource
 {
@@ -279,6 +280,7 @@ class InventoryResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make()
                 ]),
             ])
             ->emptyStateActions([
