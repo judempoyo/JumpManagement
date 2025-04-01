@@ -247,10 +247,15 @@ class InvoiceResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('customer.name')
-                    ->label('Client')
-                    ->sortable()
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('customer_name') // Utilise l'accessor
+                ->label('Client')
+                ->sortable()
+                ->searchable(query: function (Builder $query, string $search) {
+                    $query->whereHas('customer', function($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhere('passenger_customer_name', 'like', "%{$search}%");
+                }),
 
                 Tables\Columns\TextColumn::make('date')
                     ->label('Date')

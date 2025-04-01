@@ -24,6 +24,13 @@ class Invoice extends Model
     protected $casts = [
         'date' => 'datetime',
     ];
+
+    public function getCustomerNameAttribute()
+{
+    return $this->customer_id 
+        ? $this->customer->name 
+        : ($this->passenger_customer_name ?? 'Client passager');
+}
     public function customer()
 {
     return $this->belongsTo(Customer::class)->withDefault([
