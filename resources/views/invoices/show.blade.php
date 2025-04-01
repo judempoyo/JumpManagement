@@ -67,9 +67,9 @@
 <body class="bg-white text-gray-800 font-sans">
 
 
-    <div class="container lg:max-w-1/3  mx-auto p-6">
+    <div class="container lg:max-w-2xl  mx-auto p-6">
         <div class="no-print text-center mb-6">
-            <button onclick="printInvoice()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200">
+            <button onclick="printInvoice()" class="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
                 </svg>
@@ -87,7 +87,7 @@
             </div>
 
             <div class="w-2/5 text-right">
-                <h2 class="text-3xl font-bold text-blue-600">FACTURE</h2>
+                <h2 class="text-3xl font-bold text-teal-600">FACTURE</h2>
                 <div class="mt-2 space-y-1">
                     <p class="text-lg font-semibold">N°: {{ $invoice->id }}</p>
                     <p class="text-gray-600">Date: {{ $invoice->date->format('d/m/Y') }}</p>
