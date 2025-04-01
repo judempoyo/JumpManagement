@@ -25,6 +25,7 @@ class LowStockProductsTable extends BaseWidget
                     ->circular(),
 
                 Tables\Columns\TextColumn::make('name')
+                    ->label('Nom')
                     ->searchable()
                     ->sortable(),
 
@@ -33,6 +34,7 @@ class LowStockProductsTable extends BaseWidget
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('category.name')
+                    ->label('Categorie')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('quantity_in_stock')
@@ -45,13 +47,13 @@ class LowStockProductsTable extends BaseWidget
 
                 Tables\Columns\TextColumn::make('selling_price')
                     ->label('Prix de vente')
-                    ->money('XOF')
+                    ->money('CDF')
                     ->sortable(),
             ])
             ->actions([
                 Tables\Actions\Action::make('approvisionner')
-                    ->url(fn (Product $record) => route('filament.admin.resources.products.edit', $record))
+                    ->url(route('filament.admin.resources.purchase-orders.create'))
                     ->icon('heroicon-o-plus'),
-            ]);
+            ])->defaultPaginationPageOption(5);
     }
 }

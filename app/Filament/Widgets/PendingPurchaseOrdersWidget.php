@@ -53,6 +53,6 @@ class PendingPurchaseOrdersWidget extends BaseWidget
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-            ]);
+            ])->defaultPaginationPageOption(5);
     }
 }

@@ -49,6 +49,6 @@ class RecentInventoryMovementsWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('stock_after')
                     ->label('Stock après'),
-            ]);
+            ])->defaultPaginationPageOption(5);
     }
 }

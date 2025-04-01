@@ -48,6 +48,6 @@ class RecentInvoicesWidget extends BaseWidget
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-            ]);
+            ])->defaultPaginationPageOption(5);
     }
 }
