@@ -54,6 +54,6 @@ class LowStockProductsTable extends BaseWidget
                 Tables\Actions\Action::make('approvisionner')
                     ->url(route('filament.admin.resources.purchase-orders.create'))
                     ->icon('heroicon-o-plus'),
-            ]);
+            ])->defaultPaginationPageOption(5);
     }
 }
