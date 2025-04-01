@@ -8,7 +8,7 @@ class Invoice extends Model
 {
     protected $fillable = [
         'customer_id',
-        'customer_name',
+        'passenger_customer_name',
         'date',
         'time',
         'total',
@@ -34,7 +34,7 @@ class Invoice extends Model
     public function customer()
 {
     return $this->belongsTo(Customer::class)->withDefault([
-        'name' => $this->customer_name ?? 'Client passager',
+        'name' => $this->passenger_customer_name ?? 'Client passager',
         'phone' => ' ',
         'email' => ' ',
         'adress' => ' ',

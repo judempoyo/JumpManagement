@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('invoices', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->foreignId('customer_id')->nullable()->onDelete('cascade'); 
-            $table->string('customer_name')->nullable();
+            $table->string('passenger_customer_name')->nullable();
             $table->date('date');
             $table->time('time');
             $table->decimal('total', 24, 6)->default(0);

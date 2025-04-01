@@ -69,10 +69,10 @@ class InvoiceResource extends Resource
                             ->afterStateUpdated(function ($state, Set $set) {
                                 if ($state === 'passenger') {
                                     $set('customer_id', null); // NULL pour les clients passagers
-                                    $set('customer_name', '');
+                                    $set('passenger_customer_name', '');
                                 } else {
                                     $set('customer_id', $state); // ID du client existant
-                                    $set('customer_name', null);
+                                    $set('passenger_customer_name', null);
                                 }
                             }),
 
@@ -80,7 +80,7 @@ class InvoiceResource extends Resource
                         Forms\Components\Hidden::make('customer_id'),
 
                         // Champ pour le nom du client passager
-                        TextInput::make('customer_name')
+                        TextInput::make('passenger_customer_name')
                             ->label('Nom du client passager')
                             ->required(fn(Get $get): bool => $get('customer_selection') === 'passenger')
                             ->visible(fn(Get $get): bool => $get('customer_selection') === 'passenger'),
@@ -248,14 +248,18 @@ class InvoiceResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('customer_name') // Utilise l'accessor
-                ->label('Client')
-                ->sortable()
-                ->searchable(query: function (Builder $query, string $search) {
-                    $query->whereHas('customer', function($q) use ($search) {
+                    ->label('Client')
+                    ->sortable()
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('customer', function ($q) use ($search) {
                             $q->where('name', 'like', "%{$search}%");
                         })
-                        ->orWhere('passenger_customer_name', 'like', "%{$search}%");
-                }),
+                            ->orWhere('passenger_customer_name', 'like', "%{$search}%");
+                    })
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
+                            ->orderByRaw('COALESCE(customers.name, invoices.passenger_customer_name) ' . $direction);
+                    }),
 
                 Tables\Columns\TextColumn::make('date')
                     ->label('Date')
