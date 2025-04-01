@@ -9,7 +9,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class RecentInvoicesWidget extends BaseWidget
 {
-    protected int | string | array $columnSpan = 'full';
+    protected int | string | array $columnSpan = '1/2';
 
     public function table(Table $table): Table
     {
@@ -29,7 +29,8 @@ class RecentInvoicesWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('date')
                     ->label('Date')
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('total')
                     ->label('Montant')

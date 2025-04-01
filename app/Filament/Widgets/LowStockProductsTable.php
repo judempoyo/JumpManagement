@@ -9,7 +9,7 @@ use Filament\Widgets\TableWidget as BaseWidget;
 
 class LowStockProductsTable extends BaseWidget
 {
-    protected int | string | array $columnSpan = 'full';
+    protected int | string | array $columnSpan = '1/2';
 
     public function table(Table $table): Table
     {
@@ -20,18 +20,18 @@ class LowStockProductsTable extends BaseWidget
                     ->orderBy('quantity_in_stock')
             )
             ->columns([
-                Tables\Columns\ImageColumn::make('image')
+               /*  Tables\Columns\ImageColumn::make('image')
                     ->label('')
-                    ->circular(),
+                    ->circular(), */
 
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nom')
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('code')
+              /*   Tables\Columns\TextColumn::make('code')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable(), */
 
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Categorie')
@@ -42,13 +42,13 @@ class LowStockProductsTable extends BaseWidget
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('alert_quantity')
-                    ->label('Stock alerte')
+                    ->label('Alerte')
                     ->sortable(),
-
+/* 
                 Tables\Columns\TextColumn::make('selling_price')
                     ->label('Prix de vente')
                     ->money('CDF')
-                    ->sortable(),
+                    ->sortable(), */
             ])
             ->actions([
                 Tables\Actions\Action::make('approvisionner')
