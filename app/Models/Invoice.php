@@ -28,9 +28,9 @@ class Invoice extends Model
 {
     return $this->belongsTo(Customer::class)->withDefault([
         'name' => $this->customer_name ?? 'Client passager',
-        'phone' => 'Non spécifié',
-        'email' => 'Non spécifié',
-        'adress' => 'Non spécifié',
+        'phone' => ' ',
+        'email' => ' ',
+        'adress' => ' ',
     ]);
 }
     

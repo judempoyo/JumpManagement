@@ -17,7 +17,7 @@ class Customer extends Model
     ];
 
    
-public function customer()
+/* public function customer()
 {
     return $this->belongsTo(Customer::class)->withDefault([
         'name' => $this->customer_name ?? 'Client passager',
@@ -25,7 +25,7 @@ public function customer()
         'email' => '',
         'address' => '',
     ]);
-}
+} */
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
