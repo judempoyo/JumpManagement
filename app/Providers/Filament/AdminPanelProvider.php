@@ -56,10 +56,10 @@ class AdminPanelProvider extends PanelProvider
                     //MonthlySalesChart::class,
                 StatsOverviewWidget::class,
                 PendingPurchaseOrdersWidget::class,
-                RecentInventoryMovementsWidget::class,
                 RecentInvoicesWidget::class,
-                SalesByCategoryChart::class,
                 TopCustomersChart::class,
+                RecentInventoryMovementsWidget::class,
+                SalesByCategoryChart::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
