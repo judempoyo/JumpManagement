@@ -113,7 +113,7 @@ class InventoryResource extends Resource
                             ->dehydrated(false)
                             ->live()
                             ->afterStateHydrated(function (Forms\Set $set, Forms\Get $get) {
-                                $this->calculateStockAfter($set, $get);
+                                self::calculateStockAfter($set, $get);
                             }),
                     ])
                     ->columns(3),
@@ -139,7 +139,7 @@ class InventoryResource extends Resource
                     ]),
             ])
             ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get) {
-                $this->calculateStockAfter($set, $get);
+                self::calculateStockAfter($set, $get);
             });
     }
 
