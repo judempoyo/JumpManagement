@@ -49,39 +49,41 @@ class InvoiceResource extends Resource
     protected static ?int $navigationSort = 1;
 
     public static function getNavigationBadge(): ?string
-{
-    return static::getModel()::count();
-}
+    {
+        return static::getModel()::count();
+    }
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
                 Forms\Components\Section::make('Informations de base')
                     ->schema([
-                        Select::make('customer_id')
+                        Select::make('customer_selection')
                             ->label('Client')
                             ->options([
-                                null => 'Client passager', // Valeur NULL pour les clients passagers
+                                'passenger' => 'Client passager',
                                 ...Customer::all()->pluck('name', 'id')->toArray()
                             ])
                             ->required()
                             ->live()
                             ->afterStateUpdated(function ($state, Set $set) {
-                                if (is_null($state)) {
-                                    $set('customer_name', 'Client passager');
+                                if ($state === 'passenger') {
+                                    $set('customer_id', null); // NULL pour les clients passagers
+                                    $set('passenger_customer_name', '');
                                 } else {
-                                    $customer = Customer::find($state);
-                                    if ($customer) {
-                                        $set('customer_name', $customer->name);
-                                    }
+                                    $set('customer_id', $state); // ID du client existant
+                                    $set('passenger_customer_name', null);
                                 }
                             }),
 
-                        // Ajoutez ce champ conditionnel
-                        TextInput::make('customer_name')
+                        // Champ caché pour le vrai customer_id
+                        Forms\Components\Hidden::make('customer_id'),
+
+                        // Champ pour le nom du client passager
+                        TextInput::make('passenger_customer_name')
                             ->label('Nom du client passager')
-                            ->required(fn(Get $get): bool => is_null($get('customer_id')))
-                            ->visible(fn(Get $get): bool => is_null($get('customer_id'))),
+                            ->required(fn(Get $get): bool => $get('customer_selection') === 'passenger')
+                            ->visible(fn(Get $get): bool => $get('customer_selection') === 'passenger'),
                         Forms\Components\Hidden::make('user_id')
                             ->default(auth()->id())
                             ->required(),
@@ -245,10 +247,19 @@ class InvoiceResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('customer.name')
+                Tables\Columns\TextColumn::make('customer_name') // Utilise l'accessor
                     ->label('Client')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable(query: function (Builder $query, string $search) {
+                        $query->whereHas('customer', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        })
+                            ->orWhere('passenger_customer_name', 'like', "%{$search}%");
+                    })
+                    ->sortable(query: function (Builder $query, string $direction) {
+                        $query->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
+                            ->orderByRaw('COALESCE(customers.name, invoices.passenger_customer_name) ' . $direction);
+                    }),
 
                 Tables\Columns\TextColumn::make('date')
                     ->label('Date')
@@ -277,8 +288,11 @@ class InvoiceResource extends Resource
             ->headerActions([
                 ExportAction::make()->exports([
                     ExcelExport::make()->fromTable()->except([
-                        'created_at', 'updated_at', 'deleted_at',
-                    ]),]),
+                        'created_at',
+                        'updated_at',
+                        'deleted_at',
+                    ]),
+                ]),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('customer')

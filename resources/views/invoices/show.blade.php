@@ -10,11 +10,73 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @fluxAppearance
+
+    <script>
+        function printInvoice() {
+            window.print();
+        }
+    </script>
+
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 1cm;
+            }
+            
+            body {
+                font-size: 12pt;
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .print-full-width {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            
+            .print-p-0 {
+                padding: 0 !important;
+            }
+            
+            .print-m-0 {
+                margin: 0 !important;
+            }
+            
+            .break-before {
+                page-break-before: always;
+            }
+            
+            .break-after {
+                page-break-after: always;
+            }
+            
+            .break-inside-avoid {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
 </head>
 
 <body class="bg-white text-gray-800 font-sans">
-    <div class="container lg:max-w-1/3  mx-auto p-6">
+
+
+    <div class="container lg:max-w-2xl  mx-auto p-6">
+        <div class="no-print text-center mb-6">
+            <button onclick="printInvoice()" class="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 transition-colors duration-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" />
+                </svg>
+                Imprimer la facture
+            </button>
+        </div>
+
         <!-- En-tête -->
         <div class="flex justify-between items-start border-b-2 border-gray-200 pb-4 mb-4">
             <div class="w-2/5">
@@ -25,7 +87,7 @@
             </div>
 
             <div class="w-2/5 text-right">
-                <h2 class="text-3xl font-bold text-blue-600">FACTURE</h2>
+                <h2 class="text-3xl font-bold text-teal-600">FACTURE</h2>
                 <div class="mt-2 space-y-1">
                     <p class="text-lg font-semibold">N°: {{ $invoice->id }}</p>
                     <p class="text-gray-600">Date: {{ $invoice->date->format('d/m/Y') }}</p>
@@ -37,7 +99,7 @@
         <!-- Client -->
         <div class="bg-gray-50 p-4 rounded-lg mb-4">
             <h3 class="text-lg font-semibold text-gray-800 mb-2">Client:</h3>
-            <p class="font-bold">{{ $invoice->customer->name }}</p>
+            <p class="font-bold">{{ $invoice->customer_name }}</p>
             @if ($invoice->customer_id)
                 <p class="text-gray-600">{{ $invoice->customer->address }}</p>
                 <p class="text-gray-600">Téléphone: {{ $invoice->customer->phone }}</p>
